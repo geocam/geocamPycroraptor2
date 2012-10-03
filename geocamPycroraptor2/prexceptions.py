@@ -5,11 +5,11 @@
 # __END_LICENSE__
 
 
-class ServiceNotStartable(Exception):
+class ServiceAlreadyActive(Exception):
     pass
 
 
-class ServiceNotStoppable(Exception):
+class ServiceNotActive(Exception):
     pass
 
 

@@ -8,6 +8,7 @@ import os
 import re
 import datetime
 from string import Template
+import logging
 
 import gevent
 
@@ -19,18 +20,21 @@ from geocamPycroraptor2.util import trackerG
 UNIQUE_REGEX = r'\$\{unique\}|\$unique\b'
 
 
+class UtcFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.datetime.utcfromtimestamp(record.created)
+        if datefmt:
+            return dt.strftime(datefmt)
+        else:
+            return dt.isoformat() + 'Z'
+
+
 def getFileNameTimeString(timestamp=None):
     if timestamp is None:
         timestamp = datetime.datetime.utcnow()
     us = timestamp.microsecond
     seconds = timestamp.strftime('%Y-%m-%d-%H%M%S')
     return '%s-%06d-UTC' % (seconds, us)
-
-
-def getTimeString(timestamp=None):
-    if timestamp is None:
-        timestamp = datetime.datetime.utcnow()
-    return timestamp.isoformat() + 'Z'
 
 
 def openLogFromPath(owner, path, mode='a+'):
@@ -86,120 +90,19 @@ def openLogFromTemplate(owner, fnameTemplate, env):
     return (fname, openLogFromPath(owner, fname))
 
 
-class TimestampLine:
-    def __init__(self, streamName, lineType, text, timestamp=None):
-        if timestamp == None:
-            timestamp = datetime.datetime.now()
-        self.streamName = streamName
-        self.lineType = lineType
-        self.text = text
-        self.timestamp = timestamp
-
-
-class LineSource(object):
-    def __init__(self, lineHandler=None):
-        self._lineHandlers = {}
-        self._lineHandlerCount = 0
-        if lineHandler:
-            self.addLineHandler(lineHandler)
-
-    def addLineHandler(self, handler):
-        handlerRef = self._lineHandlerCount
-        self._lineHandlerCount += 1
-        self._lineHandlers[handlerRef] = handler
-        return handlerRef
-
-    def delLineHandler(self, handlerRef):
-        del self._lineHandlers[handlerRef]
-
-    def handleLine(self, tsline):
-        for hnd in self._lineHandlers.itervalues():
-            hnd(tsline)
-
-
-class TimestampLineParser(LineParser, LineSource):
-    def __init__(self, streamName,
-                 lineHandler=None,
-                 maxLineLength=160):
-        LineParser.__init__(self, self.handleRawLine)
-        LineSource.__init__(self, lineHandler)
-        self._streamName = streamName
-
-    def timestamp(self, line):
-        if line.endswith('\r\n'):
-            text = line[:-2]
-            lineType = 'n'
-        elif line.endswith('\n'):
-            text = line[:-1]
-            lineType = 'n'
-        else:
-            text = line
-            lineType = 'c'
-        return TimestampLine(self._streamName,
-                             lineType,
-                             text,
-                             datetime.datetime.utcnow())
-
-    def handleRawLine(self, text):
-        self.handleLine(self.timestamp(text))
-
-
-class TimestampLineSource(TimestampLineParser):
-    def __init__(self, streamName, fd,
-                 lineHandler=None,
-                 maxLineLength=160):
-        (super(TimestampLineSource, self).__init__
-         (streamName, lineHandler, maxLineLength))
-        self._fd = fd
-        self._q = queueFromFile(fd, maxLineLength)
-        self._job = gevent.spawn(self._handleQueue)
-        
-    def stop(self):
-        trackerG.close(self._fd)
-        self._q.put(StopIteration)
-        if self._job is not None:
-            self._job.kill()
-            self._job = None
-
-    def _handleQueue(self):
-        print '_hq'
-        for line in self._q:
-            print 'yo log'
-            self.handleRawLine(line)
-
-
-class EventLineSource(LineSource):
-    def __init__(self, streamName,
-                 lineHandler=None):
-        LineSource.__init__(self, lineHandler)
-        self._streamName = streamName
-
-    def stop(self):
-        pass
-
-    def log(self, text):
-        self.handleLine(TimestampLine
-                        (self._streamName,
-                         'n',
-                         text,
-                         datetime.datetime.utcnow()))
-
-
-class LineBuffer(LineSource):
-    def __init__(self, lineHandler=None, maxSize=2048):
-        LineSource.__init__(self, lineHandler)
+class LineBuffer(logging.Handler):
+    def __init__(self, maxSize=2048):
         self._maxSize = maxSize
         self._lines = []
         self._lineCount = 0
 
-    def addLine(self, tsline):
+    def emit(self, rec):
         DELETE_SIZE = self._maxSize // 2
         if len(self._lines) == self._maxSize - DELETE_SIZE:
             del self._lines[0:DELETE_SIZE]
-        tsline.lineCount = self._lineCount
-        self._lines.append(tsline)
+        # rec.lineCount = self._lineCount
+        self._lines.append(rec)
         self._lineCount += 1
-        self.handleLine(tsline)
 
     def getLines(self, minTime=None, maxLines=None):
         n = len(self._lines)
@@ -217,23 +120,53 @@ class LineBuffer(LineSource):
         return self._lines[minIndex:]
 
 
-class TimestampLineLogger:
-    def __init__(self, stream):
+def escapeEndOfLine(line):
+    if line.endswith('\r\n'):
+        return 'n ' + line[:-2]
+    elif line.endswith('\n'):
+        return 'n ' + line[:-1]
+    elif line.endswith('\r'):
+        return 'r ' + line[:-1]
+    else:
+        return 'c ' + line
+
+
+def getStreamLogger(name, stream):
+    result = logging.getLogger(name)
+    result.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(stream)
+    sh.setLevel(logging.DEBUG)
+    sh.setFormatter(UtcFormatter('%(asctime)s %(name)s %(message)s'))
+    result.addHandler(sh)
+    result.propagate = False
+    return result
+
+
+class TimestampingStream(LineParser):
+    def __init__(self, name, stream, maxLineLength=160):
+        super(TimestampingStream, self).__init__(self.handleLine, maxLineLength)
         self._stream = stream
+        self._logger = getStreamLogger(name, stream)
 
-    def handleLine(self, tsline):
-        self._stream.write('%s %s %s %s\n'
-                           % (tsline.streamName,
-                              tsline.lineType,
-                              getTimeString(tsline.timestamp),
-                              tsline.text))
+    def handleLine(self, line):
+        self._logger.info(escapeEndOfLine(line))
+
+    def flush(self):
+        super(TimestampingStream, self).flush()
+        self._stream.flush()
 
 
-class StreamLogger(TimestampLineParser):
-    def __init__(self, streamName, outStream,
-                 maxLineLength=160):
-        self._logger = TimestampLineLogger(outStream)
-        TimestampLineParser.__init__(self,
-                                     streamName,
-                                     self._logger.handleLine,
-                                     maxLineLength)
+class StreamLogger(object):
+    def __init__(self, inFd, logger, level=logging.DEBUG, maxLineLength=160):
+        self._logger = logger
+        self._logger.setLevel(level)
+        self._q = queueFromFile(inFd, maxLineLength)
+        self._job = gevent.spawn(self._handleQueue)
+
+    def _handleQueue(self):
+        for line in self._q:
+            self._logger.info(escapeEndOfLine(line))
+
+    def stop(self):
+        self._job.kill()
+        # could probably more thoroughly flush things

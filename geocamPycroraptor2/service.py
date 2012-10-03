@@ -29,9 +29,11 @@ class Service(object):
         self._childStdin = None
         self._tslineLogger = None
         self._logBuffer = None
+        self._logger = None
         self._outLogger = None
         self._errLogger = None
         self._eventLogger = None
+        self._stdinLogger = None
         self._statusDict = None
         self._status = None
         self._jobs = []
@@ -55,12 +57,18 @@ class Service(object):
         return self._config.get('env', {})
 
     def start(self):
-        if not statuslib.startable(self._status):
-            raise prexceptions.ServiceNotStartable(self._name)
+        if not self.isStartable():
+            raise prexceptions.ServiceAlreadyActive(self._name)
 
         cmdArgs = shlex.split(self.getCommand())
 
-        self._logBuffer = log.LineBuffer()
+        self._logger = logging.getLogger('service.%s' % self._name)
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = False
+
+        #self._logBuffer = log.LineBuffer()
+        # FIX: add handler for line buffer
+
         logName = self.getLogNameTemplate()
         if logName is None:
             self._log = None
@@ -71,18 +79,29 @@ class Service(object):
                                  (self._name,
                                   logPath,
                                   self._env))
-            self._tslineLogger = log.TimestampLineLogger(self._log)
-            self._logBuffer.addLineHandler(self._tslineLogger.handleLine)
+
+            sh = logging.StreamHandler(self._log)
+            sh.setLevel(logging.DEBUG)
+            sh.setFormatter(log.UtcFormatter('%(asctime)s %(name)s %(message)s'))
+            self._logger.addHandler(sh)
 
         childStdoutReadFd, childStdoutWriteFd = trackerG.openpty(self._name)
         childStderrReadFd, childStderrWriteFd = trackerG.openpty(self._name)
         trackerG.debug()
 
-        self._eventLogger = log.EventLineSource('evt', self._logBuffer.handleLine)
-        self._outLogger = log.TimestampLineParser('out', childStdoutReadFd,
-                                                  self._logBuffer.handleLine)
-        self._errLogger = log.TimestampLineParser('err', childStderrReadFd,
-                                                  self._logBuffer.handleLine)
+        self._eventLogger = self._logger.getChild('evt n')
+        self._eventLogger.setLevel(logging.DEBUG)
+
+        self._stdinLogger = self._logger.getChild('inp')
+        self._stdinLogger.setLevel(logging.DEBUG)
+
+        self._outLogger = (log.StreamLogger
+                           (childStdoutReadFd,
+                            self._logger.getChild('out')))
+
+        self._errLogger = (log.StreamLogger
+                           (childStderrReadFd,
+                            self._logger.getChild('err')))
 
         workingDir = self.getWorkingDir()
         if workingDir:
@@ -96,7 +115,10 @@ class Service(object):
             else:
                 childEnv[k] = v
 
-        logging.info('starting %s', self._name)
+        self._eventLogger.info('starting')
+        escapedArgs = ' '.join(['"%s"' % arg
+                                for arg in cmdArgs])
+        self._eventLogger.info('command: %s', escapedArgs)
 
         try:
             self._proc = subprocess.Popen(cmdArgs,
@@ -125,12 +147,12 @@ class Service(object):
         else:
             self._childStdin = self._proc.stdin
             self._setStatus(dict(status=statuslib.RUNNING,
-                                procStatus=statuslib.RUNNING,
-                                pid=self._proc.pid))
+                                 procStatus=statuslib.RUNNING,
+                                 pid=self._proc.pid))
 
     def stop(self):
-        if not statuslib.stoppable(self._status):
-            raise prexceptions.ServiceNotStoppable(self._name)
+        if not self.isActive():
+            raise prexceptions.ServiceNotActive(self._name)
 
         statusDict = self._statusDict.copy()
         statusDict['status'] = statuslib.STOPPING
@@ -140,6 +162,12 @@ class Service(object):
 
     def getStatus(self):
         return self._statusDict
+
+    def isActive(self):
+        return statuslib.isActive(self._status)
+
+    def isStartable(self):
+        return statuslib.isStartable(self._status)
 
     def _stopInternal(self):
         self._proc.send_signal(signal.SIGTERM)
@@ -190,8 +218,9 @@ class Service(object):
             self._errLogger.stop()
             self._errLogger = None
         if self._eventLogger:
-            self._eventLogger.stop()
             self._eventLogger = None
+        if self._stdinLogger:
+            self._stdinLogger = None
         self._log.flush()
         self._log.close()
         # note: keep self._logBuffer around in case a client requests old log data.
@@ -199,6 +228,9 @@ class Service(object):
         # self._checkForPendingRestart()
 
     def stdin(self, text):
-        logging.debug('%s stdin: %s', self._name, text)
+        if not self.isActive():
+            raise prexceptions.ServiceNotActive(self._name)
+
+        self._stdinLogger.info(log.escapeEndOfLine(text))
         self._childStdin.write(text)
         self._childStdin.flush()

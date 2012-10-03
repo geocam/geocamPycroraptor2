@@ -19,18 +19,19 @@ CLEAN_EXIT = 'cleanExit'
 SIGNAL_EXIT = 'signalExit'
 ERROR_EXIT = 'errorExit'
 
+
 STARTABLE_STATUS = (NOT_STARTED,
                     SUCCESS,
                     ABORTED,
                     FAILED)
 
-STOPPABLE_STATUS = (STARTING,
-                    RUNNING)
+ACTIVE_STATUS = (STARTING,
+                 RUNNING)
 
 
-def startable(status):
+def isActive(status):
+    return status in ACTIVE_STATUS
+
+
+def isStartable(status):
     return status in STARTABLE_STATUS
-
-
-def stoppable(status):
-    return status in STOPPABLE_STATUS

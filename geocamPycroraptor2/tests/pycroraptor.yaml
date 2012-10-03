@@ -3,7 +3,7 @@ LOG_DIR: "/tmp/pyraptord/logs"
 
 SERVICES:
   bc:
-    command: "bc"
+    command: "bc -i"
 
 GROUPS:
   startup: ["bc"]

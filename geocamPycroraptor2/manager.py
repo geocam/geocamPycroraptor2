@@ -5,6 +5,7 @@
 # __END_LICENSE__
 
 import os
+import sys
 import logging
 
 import gevent
@@ -13,7 +14,7 @@ gevent.monkey.patch_all(thread=False)
 
 from geocamPycroraptor2.util import loadConfig
 from geocamPycroraptor2.service import Service
-from geocamPycroraptor2 import prexceptions, daemonize
+from geocamPycroraptor2 import prexceptions, daemonize, log
 
 
 class Manager(object):
@@ -22,32 +23,57 @@ class Manager(object):
         self._config = loadConfig(opts.config)
         self._name = opts.name
         self._logDir = self._config.get('LOG_DIR', '/tmp/pyraptord/logs')
-        self._logFile = self._config.get('LOG_FILE', 'pyraptord_${unique}.txt')
+        self._logFname = self._config.get('LOG_FILE', 'pyraptord_${unique}.txt')
         self._pidFile = self._config.get('PID_FILE', 'pyraptord_pid.txt')
+        self._logger = logging.getLogger('pyraptord.evt')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = False
 
     def _start(self):
+        fmt = log.UtcFormatter('%(asctime)s evt n %(message)s')
+
+        if self._opts.foreground:
+            # send logger output to console
+            ch = logging.StreamHandler(sys.stderr)
+            ch.setFormatter(fmt)
+            ch.setLevel(logging.DEBUG)
+            self._logger.addHandler(ch)
+
+        if self._logFname is None:
+            self._logPath = '/dev/null'
+            self._logFile = None
+        else:
+            logPathTemplate = os.path.join(self._logDir, self._logFname)
+            self._logPath, self._logFile = (log.openLogFromTemplate
+                                            ('pyraptord',
+                                             logPathTemplate,
+                                             {}))
+
+            # send logger output to file
+            lh = logging.StreamHandler(self._logFile)
+            lh.setFormatter(fmt)
+            lh.setLevel(logging.DEBUG)
+            self._logger.addHandler(lh)
+
+        # load ports config
         self._ports = loadConfig(self._config.PORTS)
         self._port = self._ports[self._name]
 
         if not self._opts.foreground:
-            (daemonize.daemonize
-             (os.path.join(self._logDir, self._logFile),
-              {},
-              os.path.join(self._logDir, self._pidFile)))
+            self._logger.debug('daemonizing')
+            daemonize.daemonize('pyraptord', self._logFile)
 
+        # start startup services
         self._services = {}
         if 'startup' in self._config.GROUPS:
             startupGroup = self._config.GROUPS.startup
-            logging.debug('startup group: %s', startupGroup)
+            self._logger.debug('startup group: %s', startupGroup)
             for svcName in startupGroup:
-                print 'here0'
                 self.start(svcName)
         else:
-            logging.debug('no group named "startup"')
-        print 'here1'
+            self._logger.debug('no group named "startup"')
         self._jobs = []
         self._jobs.append(gevent.spawn(self._cleanupChildren))
-        print 'here2'
 
     def _cleanupChildren(self):
         while 1:

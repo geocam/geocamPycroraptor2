@@ -6,88 +6,30 @@
 # __END_LICENSE__
 
 import os
-import logging
-import errno
-import signal
-import time
 
 import zerorpc
 
 from geocamPycroraptor2.manager import Manager
-from geocamPycroraptor2.util import getPid, waitUntilDead
+from geocamPycroraptor2.daemonize import Daemon
 
 
-def getPidForManager(m):
-    return getPid(os.path.join(m._logDir, m._pidFile))
-
-
-def start(m):
-    pid = getPidForManager(m)
-    if pid is None:
-        startInternal(m)
-    else:
-        print 'pyraptord is already running, pid %s' % pid
-
-
-def startInternal(m):
-    print 'starting pyraptord...'
-    m._start()
-    s = zerorpc.Server(m)
-    s.bind(m._port)
-    logging.info('pyraptord: listening on %s', m._port)
-    print 'started'
-    s.run()
-
-
-def stop(m):
-    pid = getPidForManager(m)
-    if pid:
-        print 'stopping pyraptord (first attempt, SIGTERM), pid %s...' % pid
-        os.kill(pid, signal.SIGTERM)
-        isDead = waitUntilDead(pid, timeout=5)
-        if isDead:
-            print 'stopped'
-            return True
-        print 'stopping pyraptord (second attempt, SIGKILL), pid %s...' % pid
-        os.kill(pid, signal.SIGKILL)
-        isDead = waitUntilDead(pid, timeout=5)
-        if isDead:
-            logging.info('stopped')
-            return True
-        print "can't kill running pyraptord, pid %s", pid
-        return False
-    else:
-        print 'pyraptord does not appear to be running'
-        return True
-
-
-def restart(m):
-    print 'restarting pyraptord'
-    isStopped = stop(m)
-    if isStopped:
-        startInternal(m)
-
-
-def status(m):
-    pid = getPidForManager(m)
-    if pid is None:
-        print 'pyraptord is stopped'
-    else:
-        print 'pyraptord is running, pid %s' % pid
-
-
-COMMAND_REGISTRY = {
-    'start': start,
-    'stop': stop,
-    'restart': restart,
-    'status': status
-}
-
-
-def pyraptord(handler, opts):
+def pyraptord(cmd, opts):
     m = Manager(opts)
-    logging.basicConfig(level=logging.DEBUG)
-    handler(m)
+    d = Daemon(opts.name,
+               os.path.join(m._logDir, m._pidFile))
+
+    if cmd in ('start', 'restart'):
+        doStart = d.execute(cmd)
+        if doStart:
+            m._start()
+            s = zerorpc.Server(m)
+            s.bind(m._port)
+            m._logger.info('pyraptord: listening on %s', m._port)
+            m._logger.info('started')
+            d.writePid()
+            s.run()
+    else:
+        d.execute(cmd)
 
 
 def main():
@@ -103,15 +45,17 @@ def main():
                       help='Name of pyraptord zerorpc service [%default]',
                       default='pyraptord')
     opts, args = parser.parse_args()
-    if len(args) != 1:
-        parser.error('expected exactly 1 arg')
+    if len(args) == 0:
+        cmd = 'start'
+    elif len(args) == 1:
+        cmd = args[0]
+    else:
+        parser.error('expected at most 1 command')
 
-    cmd = args[0]
-    handler = COMMAND_REGISTRY.get(cmd)
-    if handler is None:
+    if cmd not in Daemon.COMMANDS:
         parser.error('unknown command "%s"' % cmd)
 
-    pyraptord(handler, opts)
+    pyraptord(cmd, opts)
 
 
 if __name__ == '__main__':

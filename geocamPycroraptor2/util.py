@@ -83,8 +83,8 @@ def getPid(pidPath):
     if pidIsActive(pid):
         return pid
     else:
-        logging.debug('getPid: process does not appear to be running, removing stale pid file "%s"',
-                      pidPath)
+        print ('getPid: process does not appear to be running, removing stale pid file "%s"'
+               % pidPath)
         os.unlink(pidPath)
         return None
 
@@ -97,4 +97,4 @@ def waitUntilDead(pid, timeout):
             return False
         if not pidIsActive(pid):
             return True
-        gevent.sleep(0.5)
+        gevent.sleep(0.1)
