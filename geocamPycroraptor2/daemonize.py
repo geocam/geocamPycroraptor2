@@ -77,7 +77,7 @@ class Daemon(object):
             print ('stopping %s (first attempt, SIGTERM), pid %s...'
                    % (self._name, pid))
             os.kill(pid, signal.SIGTERM)
-            isDead = waitUntilDead(pid, timeout=5)
+            isDead = waitUntilDead(pid, timeout=10)
             if isDead:
                 print 'stopped'
                 cleanIfExists(self._pidPath)
@@ -85,7 +85,7 @@ class Daemon(object):
             print ('stopping %s (second attempt, SIGKILL), pid %s...'
                    % (self._name, pid))
             os.kill(pid, signal.SIGKILL)
-            isDead = waitUntilDead(pid, timeout=5)
+            isDead = waitUntilDead(pid, timeout=10)
             if isDead:
                 print 'stopped'
                 cleanIfExists(self._pidPath)
