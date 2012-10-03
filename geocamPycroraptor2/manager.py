@@ -30,7 +30,7 @@ class Manager(object):
         self._logger.propagate = False
 
     def _start(self):
-        fmt = log.UtcFormatter('%(asctime)s evt n %(message)s')
+        fmt = log.UtcFormatter('%(asctime)s %(name)s n %(message)s')
 
         if self._opts.foreground:
             # send logger output to console
