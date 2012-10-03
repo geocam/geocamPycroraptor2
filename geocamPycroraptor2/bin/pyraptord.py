@@ -37,7 +37,7 @@ def main():
     parser = optparse.OptionParser('usage: %prog <start|stop|restart|status>')
     parser.add_option('-c', '--config',
                       help='Pycroraptor config file to use [%default]',
-                      default='pycroraptor.yaml')
+                      default='pycroraptor.json')
     parser.add_option('-f', '--foreground',
                       action='store_true', default=False,
                       help='Run in foreground (do not daemonize)')

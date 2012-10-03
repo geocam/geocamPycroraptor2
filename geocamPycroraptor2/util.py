@@ -9,9 +9,9 @@ import pty
 import logging
 import errno
 import time
-import gevent
+import json
 
-import yaml
+import gevent
 
 from geocamUtil.models.ExtrasDotField import convertToDotDictRecurse
 
@@ -56,8 +56,8 @@ trackerG = FdTracker()
 
 def loadConfig(path):
     f = open(path, 'r')
-    y = yaml.safe_load(f)
-    return convertToDotDictRecurse(y)
+    j = json.load(f)
+    return convertToDotDictRecurse(j)
 
 
 def pidIsActive(pid):

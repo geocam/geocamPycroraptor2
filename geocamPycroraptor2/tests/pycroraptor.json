@@ -1,0 +1,13 @@
+{
+    "PORTS": "ports.json",
+    "LOG_DIR": "/tmp/pyraptord/logs",
+
+    "SERVICES": {
+        "bc": {
+            "command": "bc -i"
+        }
+    },
+    "GROUPS": {
+        "startup": ["bc"]
+    }
+}

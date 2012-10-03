@@ -10,7 +10,7 @@ import logging
 from geocamPycroraptor2.shell import Shell
 
 
-def pyraptord(opts):
+def pyrterm(opts):
     logging.basicConfig(level=logging.DEBUG)
     s = Shell(opts.config)
     s.run()
@@ -21,13 +21,13 @@ def main():
     parser = optparse.OptionParser('usage: %prog')
     parser.add_option('-c', '--config',
                       help='Pycroraptor config file to use [%default]',
-                      default='pycroraptor.yaml')
+                      default='pycroraptor.json')
     opts, args = parser.parse_args()
     if args:
         parser.error('expected no args')
     if not opts.config:
         parser.error('--config option is required')
-    pyraptord(opts)
+    pyrterm(opts)
 
 
 if __name__ == '__main__':
