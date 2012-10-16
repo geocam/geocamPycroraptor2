@@ -20,6 +20,12 @@ from geocamPycroraptor2 import prexceptions, daemonize, log
 
 
 class Manager(object):
+    """
+    Pyraptord is a process manager that daemonizes and logs the console
+    output of managed services, and provides a network API for live
+    console interaction and remote start/stop/restart commands.
+    """
+
     def __init__(self, opts):
         self._opts = opts
         self._config = loadConfig(opts.config)
