@@ -27,6 +27,8 @@ def pyraptord(cmd, opts):
             m._logger.info('pyraptord: listening on %s', m._port)
             m._logger.info('started')
             d.writePid()
+            m._preQuitHandler = s.stop
+            m._postQuitHandler = d.removePid
             s.run()
     else:
         d.execute(cmd)

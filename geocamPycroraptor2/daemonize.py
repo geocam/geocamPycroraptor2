@@ -71,6 +71,9 @@ class Daemon(object):
         f.write('%d\n' % os.getpid())
         f.close()
 
+    def removePid(self):
+        cleanIfExists(self._pidPath)
+
     def stop(self):
         pid = getPid(self._pidPath)
         if pid:
@@ -80,7 +83,7 @@ class Daemon(object):
             isDead = waitUntilDead(pid, timeout=10)
             if isDead:
                 print 'stopped'
-                cleanIfExists(self._pidPath)
+                self.removePid()
                 return
             print ('stopping %s (second attempt, SIGKILL), pid %s...'
                    % (self._name, pid))
@@ -88,7 +91,7 @@ class Daemon(object):
             isDead = waitUntilDead(pid, timeout=10)
             if isDead:
                 print 'stopped'
-                cleanIfExists(self._pidPath)
+                self.removePid()
                 return
             print ("can't kill running %s, pid %s"
                    % (self._name, pid))
