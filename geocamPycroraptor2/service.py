@@ -80,7 +80,8 @@ class Service(object):
                                   logPath,
                                   self._env))
 
-            sh = logging.StreamHandler(self._log)
+            #sh = logging.StreamHandler(self._log)
+            sh = log.AutoFlushStreamHandler(self._log)
             sh.setLevel(logging.DEBUG)
             sh.setFormatter(log.UtcFormatter('%(asctime)s %(name)s %(message)s'))
             self._logger.addHandler(sh)
@@ -91,17 +92,6 @@ class Service(object):
 
         self._eventLogger = self._logger.getChild('evt n')
         self._eventLogger.setLevel(logging.DEBUG)
-
-        self._stdinLogger = self._logger.getChild('inp')
-        self._stdinLogger.setLevel(logging.DEBUG)
-
-        self._outLogger = (log.StreamLogger
-                           (childStdoutReadFd,
-                            self._logger.getChild('out')))
-
-        self._errLogger = (log.StreamLogger
-                           (childStderrReadFd,
-                            self._logger.getChild('err')))
 
         workingDir = self.getWorkingDir()
         if workingDir:
@@ -120,6 +110,7 @@ class Service(object):
                                 for arg in cmdArgs])
         self._eventLogger.info('command: %s', escapedArgs)
 
+        startupError = None
         try:
             self._proc = subprocess.Popen(cmdArgs,
                                           stdin=subprocess.PIPE,
@@ -131,20 +122,31 @@ class Service(object):
             if oe.errno == errno.ENOENT:
                 startupError = ('is executable "%s" in PATH? Popen call returned no such file or directory'
                                 % cmdArgs[0])
+            else:
+                startupError = oe
         except Exception, exc:
             startupError = exc
-        else:
-            startupError = None
         trackerG.close(childStdoutWriteFd)
         trackerG.close(childStderrWriteFd)
-        if startupError:
-            self._eventLogger.log(['startupError', startupError])
+        if startupError is not None:
+            self._eventLogger.warning('startup error: %s', startupError)
+            self._parent._logger.debug('failed to start service %s', self._name)
             self._setStatus(dict(status=statuslib.FAILED,
                                  procStatus=statuslib.ERROR_EXIT,
                                  returnValue=1,
                                  startupFailed=1))
             self._postExitCleanup()
         else:
+            self._stdinLogger = self._logger.getChild('inp')
+            self._stdinLogger.setLevel(logging.DEBUG)
+
+            self._outLogger = (log.StreamLogger
+                               (childStdoutReadFd,
+                                self._logger.getChild('out')))
+
+            self._errLogger = (log.StreamLogger
+                               (childStderrReadFd,
+                                self._logger.getChild('err')))
             self._childStdin = self._proc.stdin
             self._setStatus(dict(status=statuslib.RUNNING,
                                  procStatus=statuslib.RUNNING,

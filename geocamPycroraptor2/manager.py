@@ -78,7 +78,7 @@ class Manager(object):
 
         # load ports config
         self._ports = loadConfig(self._config.PORTS)
-        self._port = self._ports[self._name]
+        self._port = self._ports.zerorpc[self._name]
 
         if not self._opts.foreground:
             self._logger.debug('daemonizing')

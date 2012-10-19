@@ -90,6 +90,13 @@ def openLogFromTemplate(owner, fnameTemplate, env):
     return (fname, openLogFromPath(owner, fname))
 
 
+class AutoFlushStreamHandler(logging.StreamHandler):
+    def emit(self, rec):
+        result = super(AutoFlushStreamHandler, self).emit(rec)
+        self.flush()
+        return result
+
+
 class LineBuffer(logging.Handler):
     def __init__(self, maxSize=2048):
         self._maxSize = maxSize
