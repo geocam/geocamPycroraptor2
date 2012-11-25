@@ -125,8 +125,8 @@ class Manager(object):
         while 1:
             for svc in self._services.itervalues():
                 svc._cleanup()
+            self._checkForQuitComplete()
             gevent.sleep(0.1)
-        self._checkForQuitComplete()
 
     def _quitInternal(self):
         # leave time to respond to caller before shutting down
@@ -136,6 +136,7 @@ class Manager(object):
             self._preQuitHandler()
         for svc in self._services.itervalues():
             if svc.isActive():
+                self._logger.info('stopping %s' % svc._name)
                 svc.stop()
         self._checkForQuitComplete()
 

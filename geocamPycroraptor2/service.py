@@ -186,7 +186,7 @@ class Service(object):
         if self._proc and self._proc.poll() != None:
             if self._proc.returncode < 0:
                 sigNum = -self._proc.returncode
-                if sigNum in (signal.SIGTERM, signal.SIGHUP):
+                if sigNum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
                     status0 = statuslib.ABORTED
                 else:
                     status0 = statuslib.FAILED
@@ -227,8 +227,8 @@ class Service(object):
             self._eventLogger = None
         if self._stdinLogger:
             self._stdinLogger = None
-        self._log.flush()
         self._log.close()
+        self._log = None
         # note: keep self._logBuffer around in case a client requests old log data.
         #  it will be reinitialized the next time the task is started.
         # self._checkForPendingRestart()

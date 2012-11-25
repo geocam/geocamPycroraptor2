@@ -5,9 +5,12 @@
     "SERVICES": {
         "bc": {
             "command": "bc -i"
+        },
+        "nohup": {
+            "command": "nohup cat"
         }
     },
     "GROUPS": {
-        "startup": ["bc"]
+        "startup": ["bc", "nohup"]
     }
 }

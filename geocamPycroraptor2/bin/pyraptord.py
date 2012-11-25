@@ -7,6 +7,7 @@
 
 import os
 
+import gevent
 import zerorpc
 
 from geocamPycroraptor2.manager import Manager
@@ -30,6 +31,9 @@ def pyraptord(cmd, opts):
             m._preQuitHandler = s.stop
             m._postQuitHandler = d.removePid
             s.run()
+            # we fall out of run() for some reason after receiving
+            # SIGINT, but we still want to do some cleanup
+            gevent.sleep(10000)
     else:
         d.execute(cmd)
 

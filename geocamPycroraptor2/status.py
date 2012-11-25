@@ -26,7 +26,8 @@ STARTABLE_STATUS = (NOT_STARTED,
                     FAILED)
 
 ACTIVE_STATUS = (STARTING,
-                 RUNNING)
+                 RUNNING,
+                 STOPPING)
 
 
 def isActive(status):
