@@ -172,8 +172,10 @@ class Service(object):
         return statuslib.isStartable(self._status)
 
     def _stopInternal(self):
+        self._eventLogger.warning('received stop command, sending SIGTERM signal')
         self._proc.send_signal(signal.SIGTERM)
         gevent.sleep(5)
+        self._eventLogger.warning('service did not stop after first attempt, sending SIGKILL signal')
         self._proc.send_signal(signal.SIGKILL)
 
     def _setStatus(self, statusDict):
@@ -202,6 +204,8 @@ class Service(object):
                                  procStatus=statuslib.CLEAN_EXIT,
                                  returnValue=0)
             self._setStatus(newStatus)
+            self._eventLogger.warning('stopped')
+            self._eventLogger.warning('status: %s', newStatus)
             self._postExitCleanup()
             self._proc = None
 
