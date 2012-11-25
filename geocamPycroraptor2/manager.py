@@ -41,10 +41,13 @@ class Manager(object):
         self._postQuitHandler = None
 
     def _getSignalsToHandle(self):
-        result = [signal.SIGHUP, signal.SIGTERM]
-        if self._opts.foreground:
-            result.append(signal.SIGINT)
-        return result
+        return [signal.SIGHUP, signal.SIGINT, signal.SIGTERM]
+
+    def _disableGeventDefaultSigintHandler(self):
+        h = gevent.hub.get_hub()
+        if h.keyboard_interrupt_signal is not None:
+            h.keyboard_interrupt_signal.cancel()
+            h.keyboard_interrupt_signal = None
 
     def _start(self):
         fmt = log.UtcFormatter('%(asctime)s %(name)s n %(message)s')
@@ -75,6 +78,7 @@ class Manager(object):
         self._logger.debug('installing signal handlers')
         for sig in self._getSignalsToHandle():
             signal.signal(sig, self._handleSignal)
+        gevent.spawn(self._disableGeventDefaultSigintHandler)
 
         # load ports config
         self._ports = loadConfig(self._config.PORTS)
@@ -96,12 +100,13 @@ class Manager(object):
         self._jobs = []
         self._jobs.append(gevent.spawn(self._cleanupChildren))
 
-    def _handleSignal(self, sigNum, frame):
+
+    def _handleSignal(self, sigNum='unknown', frame=None):
         if sigNum in SIG_VERBOSE:
             desc = SIG_VERBOSE[sigNum]['sigName']
         else:
             desc = 'unknown'
-        self._logger.info('caught signal %d (%s), shutting down',
+        self._logger.info('caught signal %s (%s), shutting down',
                           sigNum, desc)
         try:
             self.quit()
