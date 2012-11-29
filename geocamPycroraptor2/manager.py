@@ -169,6 +169,7 @@ class Manager(object):
         """
         Start *svcName*.
         """
+        self._logger.debug('received: start %s', svcName)
         self._getService(svcName).start()
 
     def stdin(self, svcName, text):
@@ -181,7 +182,15 @@ class Manager(object):
         """
         Stop *svcName*.
         """
+        self._logger.debug('received: stop %s', svcName)
         self._getService(svcName).stop()
+
+    def restart(self, svcName):
+        """
+        Restart *svcName*.
+        """
+        self._logger.debug('received: restart %s', svcName)
+        self._getService(svcName).restart()
 
     def getStatus(self, svcName):
         """

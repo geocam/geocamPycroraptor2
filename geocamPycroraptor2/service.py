@@ -41,6 +41,8 @@ class Service(object):
         self._env = {'name': self._name}
         self._log = None
         self._setStatus({'status': statuslib.NOT_STARTED})
+        self._restart = False
+        self._streamHandler = None
 
     def getCommand(self):
         return self._config.get('command',
@@ -81,10 +83,10 @@ class Service(object):
                                   self._env))
 
             #sh = logging.StreamHandler(self._log)
-            sh = log.AutoFlushStreamHandler(self._log)
-            sh.setLevel(logging.DEBUG)
-            sh.setFormatter(log.UtcFormatter('%(asctime)s %(name)s %(message)s'))
-            self._logger.addHandler(sh)
+            self._streamHandler = log.AutoFlushStreamHandler(self._log)
+            self._streamHandler.setLevel(logging.DEBUG)
+            self._streamHandler.setFormatter(log.UtcFormatter('%(asctime)s %(name)s %(message)s'))
+            self._logger.addHandler(self._streamHandler)
 
         childStdoutReadFd, childStdoutWriteFd = trackerG.openpty(self._name)
         childStderrReadFd, childStderrWriteFd = trackerG.openpty(self._name)
@@ -162,6 +164,13 @@ class Service(object):
 
         self._jobs.append(gevent.spawn(self._stopInternal))
 
+    def restart(self):
+        if self.isActive():
+            self._restart = True
+            self.stop()
+        else:
+            self.start()
+
     def getStatus(self):
         return self._statusDict
 
@@ -172,11 +181,13 @@ class Service(object):
         return statuslib.isStartable(self._status)
 
     def _stopInternal(self):
-        self._eventLogger.warning('received stop command, sending SIGTERM signal')
-        self._proc.send_signal(signal.SIGTERM)
+        if self._proc:
+            self._eventLogger.warning('received stop command, sending SIGTERM signal')
+            self._proc.send_signal(signal.SIGTERM)
         gevent.sleep(5)
-        self._eventLogger.warning('service did not stop after first attempt, sending SIGKILL signal')
-        self._proc.send_signal(signal.SIGKILL)
+        if self._proc:
+            self._eventLogger.warning('service did not stop after first attempt, sending SIGKILL signal')
+            self._proc.send_signal(signal.SIGKILL)
 
     def _setStatus(self, statusDict):
         self._statusDict = statusDict
@@ -207,7 +218,6 @@ class Service(object):
             self._eventLogger.warning('stopped')
             self._eventLogger.warning('status: %s', newStatus)
             self._postExitCleanup()
-            self._proc = None
 
     def _postExitCleanup(self):
         self._proc = None
@@ -227,11 +237,16 @@ class Service(object):
             self._eventLogger = None
         if self._stdinLogger:
             self._stdinLogger = None
+        if self._streamHandler:
+            self._logger.removeHandler(self._streamHandler)
+            self._streamHandler = None
         self._log.close()
         self._log = None
         # note: keep self._logBuffer around in case a client requests old log data.
         #  it will be reinitialized the next time the task is started.
-        # self._checkForPendingRestart()
+        if self._restart:
+            self._restart = False
+            self.start()
 
     def stdin(self, text):
         if not self.isActive():
