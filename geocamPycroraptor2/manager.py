@@ -198,6 +198,13 @@ class Manager(object):
         """
         return self._getService(svcName).getStatus()
 
+    def getStatusAll(self):
+        """
+        Get status of all services.
+        """
+        return dict([(svcName, svc.getStatus())
+                     for svcName, svc in self._services.iteritems()])
+
     def quit(self):
         """
         Stop all managed services and quit pyraptord.
