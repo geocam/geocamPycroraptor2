@@ -164,10 +164,13 @@ class TimestampingStream(LineParser):
 
 
 class StreamLogger(object):
-    def __init__(self, inFd, logger, level=logging.DEBUG, maxLineLength=160):
+    def __init__(self, inFd, logger,
+                 level=logging.DEBUG,
+                 maxLineLength=160,
+                 label=None):
         self._logger = logger
         self._logger.setLevel(level)
-        self._q = queueFromFile(inFd, maxLineLength)
+        self._q = queueFromFile(inFd, maxLineLength, label)
         self._job = gevent.spawn(self._handleQueue)
 
     def _handleQueue(self):

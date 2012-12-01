@@ -144,11 +144,13 @@ class Service(object):
 
             self._outLogger = (log.StreamLogger
                                (childStdoutReadFd,
-                                self._logger.getChild('out')))
+                                self._logger.getChild('out'),
+                                label='%s.out' % self._name))
 
             self._errLogger = (log.StreamLogger
                                (childStderrReadFd,
-                                self._logger.getChild('err')))
+                                self._logger.getChild('err'),
+                                label='%s.err' % self._name))
             self._childStdin = self._proc.stdin
             self._setStatus(dict(status=statuslib.RUNNING,
                                  procStatus=statuslib.RUNNING,
