@@ -13,7 +13,7 @@ import json
 
 import gevent
 
-from geocamUtil.models.ExtrasDotField import convertToDotDictRecurse
+from geocamUtil.dotDict import convertToDotDictRecurse
 
 
 class FdTracker(object):
