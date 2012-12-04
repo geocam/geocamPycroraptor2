@@ -212,7 +212,7 @@ class Manager(object):
         config file). Note: you can add or modify services by loading a
         new config, but you must restart pyraptord if you want to remove
         unwanted services or change global settings such as the
-        pyraptord RPC port.
+        pyraptord zerorpc endpoint.
         """
         self._logger.debug('received: loadConfig %s', path)
         if path is not None:
