@@ -28,7 +28,8 @@ class Manager(object):
 
     def __init__(self, opts):
         self._opts = opts
-        self._config = loadConfig(opts.config)
+        self._configPath = opts.config
+        self._config = loadConfig(self._configPath)
         self._name = opts.name
         self._logDir = self._config.get('LOG_DIR', '/tmp/pyraptord/logs')
         self._logFname = self._config.get('LOG_FILE', 'pyraptord_${unique}.txt')
@@ -204,6 +205,25 @@ class Manager(object):
         """
         return dict([(svcName, svc.getStatus())
                      for svcName, svc in self._services.iteritems()])
+
+    def loadConfig(self, path=None):
+        """
+        Load a new config file from *path* (defaults to the previous
+        config file). Note: you can add or modify services by loading a
+        new config, but you must restart pyraptord if you want to remove
+        unwanted services or change global settings such as the
+        pyraptord RPC port.
+        """
+        self._logger.debug('received: loadConfig %s', path)
+        if path is not None:
+            self._configPath = os.path.abspath(path)
+        newConfig = loadConfig(self._configPath)
+        for k, v in newConfig.iteritems():
+            if k in self._config and isinstance(v, dict):
+                self._config[k].update(v)
+            else:
+                self._config[k] = v
+        self._logger.debug('loaded new config %s', self._configPath)
 
     def quit(self):
         """
