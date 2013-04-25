@@ -28,9 +28,12 @@ def daemonize(name, logFile):
     devNull = file('/dev/null', 'rw')
     os.dup2(devNull.fileno(), 0)
 
-    print 'log at %s' % logFile.name
     if logFile is None:
         logFile = devNull
+        print 'no log'
+    else:
+        print 'log at %s' % logFile.name
+
     os.dup2(logFile.fileno(), 1)
     os.dup2(logFile.fileno(), 2)
     sys.stdout = log.TimestampingStream('%s.out' % name, sys.stdout)
@@ -67,9 +70,12 @@ class Daemon(object):
             return False
 
     def writePid(self):
-        f = open(self._pidPath, 'w')
-        f.write('%d\n' % os.getpid())
-        f.close()
+        try:
+            f = open(self._pidPath, 'w')
+            f.write('%d\n' % os.getpid())
+            f.close()
+        except:
+            print >>sys.stderr, 'could not write pid to path "%s"' % self._pidPath
 
     def removePid(self):
         cleanIfExists(self._pidPath)

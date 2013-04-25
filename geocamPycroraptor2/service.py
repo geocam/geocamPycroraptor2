@@ -72,16 +72,20 @@ class Service(object):
         # FIX: add handler for line buffer
 
         logName = self.getLogNameTemplate()
-        if logName is None:
-            self._log = None
-        else:
+        self._log = None
+        if logName is not None:
             logPath = os.path.join(self._parent._logDir,
                                    logName)
-            _fname, self._log = (log.openLogFromTemplate
-                                 (self._name,
-                                  logPath,
-                                  self._env))
+            try:
+                _fname, self._log = (log.openLogFromTemplate
+                                     (self._name,
+                                      logPath,
+                                      self._env))
+            except:
+                self._parent._logger.warning('could not open log file for service "%s" at path "%s"',
+                                             self._name, logPath)
 
+        if self._log is not None:
             #sh = logging.StreamHandler(self._log)
             self._streamHandler = log.AutoFlushStreamHandler(self._log)
             self._streamHandler.setLevel(logging.DEBUG)
@@ -242,8 +246,9 @@ class Service(object):
         if self._streamHandler:
             self._logger.removeHandler(self._streamHandler)
             self._streamHandler = None
-        self._log.close()
-        self._log = None
+        if self._log:
+            self._log.close()
+            self._log = None
         # note: keep self._logBuffer around in case a client requests old log data.
         #  it will be reinitialized the next time the task is started.
         if self._restart:

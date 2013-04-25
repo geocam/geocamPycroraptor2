@@ -60,16 +60,19 @@ class Manager(object):
             ch.setLevel(logging.DEBUG)
             self._logger.addHandler(ch)
 
-        if self._logFname is None:
-            self._logPath = '/dev/null'
-            self._logFile = None
-        else:
+        self._logPath = '/dev/null'
+        self._logFile = None
+        if self._logFname is not None:
             logPathTemplate = os.path.join(self._logDir, self._logFname)
-            self._logPath, self._logFile = (log.openLogFromTemplate
-                                            ('pyraptord',
-                                             logPathTemplate,
-                                             {}))
+            try:
+                self._logPath, self._logFile = (log.openLogFromTemplate
+                                                ('pyraptord',
+                                                 logPathTemplate,
+                                                 {}))
+            except:
+                self._logger.error('could not open log file %s!', logPathTemplate)
 
+        if self._logFile is not None:
             # send logger output to file
             lh = logging.StreamHandler(self._logFile)
             lh.setFormatter(fmt)
