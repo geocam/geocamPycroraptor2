@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import signal
+import shlex
 
 import gevent
 import gevent.monkey
@@ -38,6 +39,7 @@ class Manager(object):
         self._logger.setLevel(logging.DEBUG)
         self._logger.propagate = False
         self._quitting = False
+        self._shutdownCmd = None
         self._preQuitHandler = None
         self._postQuitHandler = None
 
@@ -149,11 +151,23 @@ class Manager(object):
             self._logger.info('all services stopped')
             if self._postQuitHandler is not None:
                 self._postQuitHandler()
-            self._logger.info('terminating pyraptord process')
-            # exit by clearing the SIGTERM handler and SIGTERM-ing this process.
-            # sys.exit() doesn't work with gevent pre-1.0
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
-            os.kill(os.getpid(), signal.SIGTERM)
+            if self._shutdownCmd is not None:
+                cmdString = ' '.join(['"%s"' % arg for arg in self._shutdownCmd])
+                self._logger.info('issuing system shutdown command: %s', cmdString)
+                logging.shutdown()
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                proc = subprocess.Popen(cmd=self._shutdownCmd,
+                                        shell=False,
+                                        close_fds=True)
+                proc.wait()
+                os.kill(os.getpid(), signal.SIGTERM)
+            else:
+                self._logger.info('terminating pyraptord process')
+                logging.shutdown()
+                # exit by clearing the SIGTERM handler and SIGTERM-ing this process.
+                # sys.exit() doesn't work with gevent pre-1.0
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                os.kill(os.getpid(), signal.SIGTERM)
 
     def _getService(self, svcName):
         svcConfig = self._config.SERVICES.get(svcName)
@@ -232,4 +246,16 @@ class Manager(object):
         """
         Stop all managed services and quit pyraptord.
         """
+        gevent.spawn(self._quitInternal)
+
+    def shutdown(self, cmd='sudo /sbin/shutdown -h now'):
+        """
+        Stop all managed services and then perform a system shutdown.
+        """
+        if isinstance(cmd, (str, unicode)):
+            self._shutdownCmd = shlex.split(cmd)
+        elif isinstance(self._shutdownCmd, (list, tuple)):
+            self._shutdownCmd = cmd
+        else:
+            raise ValueError('cmd should be a string or a list, got %s' % cmd)
         gevent.spawn(self._quitInternal)
