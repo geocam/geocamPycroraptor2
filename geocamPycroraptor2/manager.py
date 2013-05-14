@@ -9,6 +9,7 @@ import sys
 import logging
 import signal
 import shlex
+import subprocess
 
 import gevent
 import gevent.monkey
@@ -156,7 +157,7 @@ class Manager(object):
                 self._logger.info('issuing system shutdown command: %s', cmdString)
                 logging.shutdown()
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
-                proc = subprocess.Popen(cmd=self._shutdownCmd,
+                proc = subprocess.Popen(args=self._shutdownCmd,
                                         shell=False,
                                         close_fds=True)
                 proc.wait()
