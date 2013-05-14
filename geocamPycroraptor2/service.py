@@ -201,6 +201,11 @@ class Service(object):
 
     def _cleanup(self):
         if self._proc and self._proc.poll() != None:
+            # process exited
+
+            # bit of a hack... leave some time to collect console output
+            gevent.sleep(0.05)
+
             if self._proc.returncode < 0:
                 sigNum = -self._proc.returncode
                 if sigNum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
