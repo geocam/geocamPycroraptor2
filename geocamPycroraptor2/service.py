@@ -203,8 +203,10 @@ class Service(object):
         if self._proc and self._proc.poll() != None:
             # process exited
 
-            # bit of a hack... leave some time to collect console output
-            gevent.sleep(0.05)
+            # bit of a hack... leave some time to collect console
+            # output. needs to be longer than the refresh period in
+            # geocamUtil.gevent.util.copyFileToQueue()
+            gevent.sleep(0.15)
 
             if self._proc.returncode < 0:
                 sigNum = -self._proc.returncode
