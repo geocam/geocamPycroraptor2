@@ -80,8 +80,15 @@ def _findUniqueFileAndSetSymLink(fnameTemplate, env):
     fname = _expandUniq(fnameTemplate,
                         getFileNameTimeString(), env)
     symSrc = os.path.basename(fname)
-    symTarget = _expandUniq(fnameTemplate, 'latest', env)
-    _forceSymLink(symSrc, symTarget)
+    latestLink = _expandUniq(fnameTemplate, 'latest', env)
+
+    # create service_previous.txt symlink
+    if os.path.islink(latestLink):
+        prevSymSrc = os.readlink(latestLink)
+        previousLink = _expandUniq(fnameTemplate, 'previous', env)
+        _forceSymLink(prevSymSrc, previousLink)
+
+    _forceSymLink(symSrc, latestLink)
     return fname
 
 
