@@ -260,3 +260,9 @@ class Manager(object):
         else:
             raise ValueError('cmd should be a string or a list, got %s' % cmd)
         gevent.spawn(self._quitInternal)
+
+    def reboot(self):
+        """
+        Stop all managed services and then perform a system reboot.
+        """
+        self.shutdown('sudo /sbin/shutdown -r now')
