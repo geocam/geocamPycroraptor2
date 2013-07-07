@@ -15,7 +15,7 @@ import gevent
 import gevent.monkey
 gevent.monkey.patch_all(thread=False)
 
-from geocamPycroraptor2.util import loadConfig
+from geocamPycroraptor2.util import loadConfig, ConfigField
 from geocamPycroraptor2.service import Service
 from geocamPycroraptor2.signals import SIG_VERBOSE
 from geocamPycroraptor2 import prexceptions, daemonize, log
@@ -266,3 +266,57 @@ class Manager(object):
         Stop all managed services and then perform a system reboot.
         """
         self.shutdown('sudo /sbin/shutdown -r now')
+
+    def getConfig(self, field):
+        """
+        Get config field *field*.
+
+        Note that you can set a config field several levels deep by
+        specifying *field* to be a dot-separated path such as
+        'SERVICES.service1.command'.
+        """
+        return ConfigField(self, '_config').getSubField(field).getValue()
+
+    def setConfig(self, field, value):
+        """
+        Set config field *field* to *value*.
+
+        Note that you can set a config field several levels deep by
+        specifying *field* to be a dot-separated path such as
+        'SERVICES.service1.command'.
+        """
+        configField = ConfigField(self, '_config').getSubField(field)
+        configField.setValue(value)
+
+    def updateConfig(self, field, valueDict):
+        """
+        Update config field *field* with members from *valueDict*.
+
+        Old field value and *valueDict* must both be of type dict --
+        their members will be combined using the dict.update() method;
+        new member values will overwrite old member values.
+
+        Note that you can set a config field several levels deep by
+        specifying *field* to be a dot-separated path such as
+        'SERVICES.service1'.
+        """
+        configField = ConfigField(self, '_config').getSubField(field)
+        configField.update(valueDict)
+
+    def getServiceConfig(self, svcName):
+        """
+        Get config for *svcName*.
+        """
+        return self.getConfig('SERVICES.' + svcName)
+
+    def setServiceConfig(self, svcName, valueDict):
+        """
+        Set config for *svcName* to *valueDict*.
+        """
+        self.setConfig('SERVICES.' + svcName, valueDict)
+
+    def updateServiceConfig(self, svcName, valueDict):
+        """
+        Update config for *svcName* with members from *valueDict*.
+        """
+        self.updateConfig('SERVICES.' + svcName, valueDict)

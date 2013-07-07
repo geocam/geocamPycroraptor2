@@ -60,6 +60,34 @@ def loadConfig(path):
     return convertToDotDictRecurse(j)
 
 
+class ConfigField(object):
+    def __init__(self, config, field):
+        self.config = config
+        self.field = field
+
+    def getSubField1(self, field):
+        return ConfigField(self.getValue(), field)
+
+    def getSubField(self, fieldPath):
+        current = self
+        if fieldPath == '':
+            elts = []
+        else:
+            elts = fieldPath.split('.')
+        for elt in elts:
+            current = current.getSubField1(elt)
+        return current
+
+    def getValue(self):
+        return getattr(self.config, self.field)
+
+    def setValue(self, val):
+        setattr(self.config, self.field, val)
+
+    def update(self, val):
+        self.getValue().update(val)
+
+
 def pidIsActive(pid):
     try:
         os.kill(pid, 0)
