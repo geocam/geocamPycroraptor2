@@ -32,6 +32,17 @@ except:
 
 
 class PopenNoErrPipe(object):
+    """
+    This is a re-implementation of a subset of subprocess.Popen. Its main
+    purpose is to support piping stdin or stdout to a named pipe without
+    blocking the parent process.
+
+    (Normally an open() call on a named pipe blocks until there is a
+    peer connected to the other end of the pipe, and in the normal
+    Popen() implementation, when the child blocks before the exec()
+    call, it causes the parent to block as well.)
+    """
+
     def _set_cloexec_flag(self, fd, cloexec=True):
         try:
             cloexec_flag = fcntl.FD_CLOEXEC
