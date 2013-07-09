@@ -102,10 +102,18 @@ class PopenNoErrPipe(object):
                     os.execvp(args[0], args)
 
                 assert False, 'should never reach this point'
+
             except:
-                self._logger.warning(traceback.format_exc())
-                self._logger.warning('service startup failed')
-                os._exit(1)  # sys.exit(1)
+                print >> sys.stderr, traceback.format_exc()
+                print >> sys.stderr, 'service startup failed'
+                os._exit(1)
+
+            finally:
+                # make really sure the child exits on failure.
+                # otherwise we can get some really pathological error
+                # modes if, for example, the traceback above raises an
+                # exception.
+                os._exit(1)
 
         else:
             # parent
@@ -202,7 +210,7 @@ class Service(object):
             except:
                 print >> sys.stderr, traceback.format_exc()
                 print >> sys.stderr, 'could not open %s for writing' % stdoutPath
-                os._exit(1)  # sys.exit(1)
+                os._exit(1)
             assert fd >= 0
             os.dup2(fd, 1)
             os.close(fd)
@@ -212,7 +220,7 @@ class Service(object):
         if not self.isStartable():
             raise prexceptions.ServiceAlreadyActive(self._name)
 
-        cmdArgs = shlex.split(self.getCommand())
+        cmdArgs = shlex.split(self.getCommand().encode('utf8'))
 
         self._logger = logging.getLogger('service.%s' % self._name)
         self._logger.setLevel(logging.DEBUG)
