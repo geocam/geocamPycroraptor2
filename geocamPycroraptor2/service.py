@@ -10,6 +10,10 @@ import logging
 import os
 import signal
 import errno
+import sys
+import os
+import fcntl
+import traceback
 
 import gevent
 import gevent.monkey
@@ -19,6 +23,105 @@ from geocamPycroraptor2.util import trackerG
 from geocamPycroraptor2.signals import SIG_VERBOSE
 from geocamPycroraptor2 import prexceptions, log
 from geocamPycroraptor2 import status as statuslib
+
+
+try:
+    MAXFD = os.sysconf("SC_OPEN_MAX")
+except:
+    MAXFD = 256
+
+
+class PopenNoErrPipe(object):
+    def _set_cloexec_flag(self, fd, cloexec=True):
+        try:
+            cloexec_flag = fcntl.FD_CLOEXEC
+        except AttributeError:
+            cloexec_flag = 1
+
+        old = fcntl.fcntl(fd, fcntl.F_GETFD)
+        if cloexec:
+            fcntl.fcntl(fd, fcntl.F_SETFD, old | cloexec_flag)
+        else:
+            fcntl.fcntl(fd, fcntl.F_SETFD, old & ~cloexec_flag)
+
+    def __init__(self, args,
+                 stdin=None,
+                 stdout=None,
+                 stderr=None,
+                 preexec_fn=None,
+                 env=None,
+                 close_fds=True,
+                 cwd=None):
+        self.returncode = None
+        self.pid = None
+
+        if stdin is subprocess.PIPE:
+            stdin, stdinWrite = os.pipe()
+            self._set_cloexec_flag(stdin)
+            self._set_cloexec_flag(stdinWrite)
+        else:
+            stdinWrite = None
+
+        pid = os.fork()
+        assert pid >= 0
+        if pid == 0:
+            # child
+            try:
+                if stdin is not None:
+                    os.dup2(stdin, 0)
+
+                if stdout is not None:
+                    os.dup2(stdout, 1)
+
+                if stderr is not None:
+                    os.dup2(stderr, 2)
+
+                if close_fds:
+                    os.closerange(3, MAXFD)
+
+                if cwd:
+                    os.chdir(cwd)
+
+                if preexec_fn:
+                    preexec_fn()
+
+                if env:
+                    os.execvpe(args[0], args, env)
+                else:
+                    os.execvp(args[0], args)
+
+                assert False, 'should never reach this point'
+            except:
+                self._logger.warning(traceback.format_exc())
+                self._logger.warning('service startup failed')
+                os._exit(1)  # sys.exit(1)
+
+        else:
+            # parent
+            self.pid = pid
+            if stdinWrite:
+                self.stdin = os.fdopen(stdinWrite, 'wb', 0)
+            else:
+                self.stdin = None
+
+    def poll(self):
+        if self.returncode is None:
+            try:
+                pid, sts = os.waitpid(self.pid, os.WNOHANG)
+                if pid == self.pid:
+                    if os.WIFSIGNALED(sts):
+                        self.returncode = -os.WTERMSIG(sts)
+                    elif os.WIFEXITED(sts):
+                        self.returncode = os.WEXITSTATUS(sts)
+                    else:
+                        raise RuntimeError("don't understand exit status %s" % sts)
+            except os.error as e:
+                if e.errno == errno.ECHILD:
+                    self.returncode = 0
+        return self.returncode
+
+    def send_signal(self, sig):
+        os.kill(self.pid, sig)
 
 
 class Service(object):
@@ -53,10 +156,46 @@ class Service(object):
                                 '${name}_${unique}.txt')
 
     def getWorkingDir(self):
-        return self._config.get('workingDir')
+        return self._config.get('cwd')
 
     def getEnvVariables(self):
         return self._config.get('env', {})
+
+    def getStdout(self):
+        return self._config.get('stdout')
+
+    def getStdin(self):
+        return self._config.get('stdin')
+
+    def openExternalStreams(self):
+        """
+        If needed, open streams that connect the child process console
+        to something other than the pyraptord parent process.
+
+        We do this in the child process after the fork because it may
+        block (for example, when the path is a named pipe and there is
+        no peer connected to the other end of the pipe yet).
+        """
+
+        stdinPath = self.getStdin()
+        if stdinPath:
+            fd = os.open(stdinPath, os.O_RDONLY)
+            assert fd >= 0
+            os.dup2(fd, 0)
+            os.close(fd)
+
+        stdoutPath = self.getStdout()
+        if stdoutPath:
+            try:
+                fd = os.open(stdoutPath, os.O_WRONLY)
+            except:
+                print >> sys.stderr, traceback.format_exc()
+                print >> sys.stderr, 'could not open %s for writing' % stdoutPath
+                os._exit(1)  # sys.exit(1)
+            assert fd >= 0
+            os.dup2(fd, 1)
+            os.close(fd)
+
 
     def start(self):
         if not self.isStartable():
@@ -92,16 +231,24 @@ class Service(object):
             self._streamHandler.setFormatter(log.UtcFormatter('%(asctime)s %(name)s %(message)s'))
             self._logger.addHandler(self._streamHandler)
 
-        childStdoutReadFd, childStdoutWriteFd = trackerG.openpty(self._name)
+        stdinPath = self.getStdin()
+        if stdinPath is None:
+            childStdinReadFd = subprocess.PIPE
+            popenStdin = childStdinReadFd
+        else:
+            popenStdin = None
+
+        stdoutPath = self.getStdout()
+        if stdoutPath is None:
+            childStdoutReadFd, childStdoutWriteFd = trackerG.openpty(self._name)
+            popenStdout = childStdoutWriteFd
+        else:
+            popenStdout = None
         childStderrReadFd, childStderrWriteFd = trackerG.openpty(self._name)
         trackerG.debug()
 
         self._eventLogger = self._logger.getChild('evt n')
         self._eventLogger.setLevel(logging.DEBUG)
-
-        workingDir = self.getWorkingDir()
-        if workingDir:
-            os.chdir(workingDir)
 
         childEnv = os.environ.copy()
         for k, v in self.getEnvVariables().iteritems():
@@ -116,14 +263,21 @@ class Service(object):
                                 for arg in cmdArgs])
         self._eventLogger.info('command: %s', escapedArgs)
 
+        if self.getStdin() or self.getStdout():
+            popenClass = PopenNoErrPipe
+        else:
+            popenClass = subprocess.Popen
+
         startupError = None
         try:
-            self._proc = subprocess.Popen(cmdArgs,
-                                          stdin=subprocess.PIPE,
-                                          stdout=childStdoutWriteFd,
-                                          stderr=childStderrWriteFd,
-                                          env=childEnv,
-                                          close_fds=True)
+            self._proc = popenClass(cmdArgs,
+                                    stdin=popenStdin,
+                                    stdout=popenStdout,
+                                    stderr=childStderrWriteFd,
+                                    env=childEnv,
+                                    close_fds=True,
+                                    cwd=self.getWorkingDir(),
+                                    preexec_fn=self.openExternalStreams)
         except OSError, oe:
             if oe.errno == errno.ENOENT:
                 startupError = ('is executable "%s" in PATH? Popen call returned no such file or directory'
@@ -132,7 +286,8 @@ class Service(object):
                 startupError = oe
         except Exception, exc:
             startupError = exc
-        trackerG.close(childStdoutWriteFd)
+        if not stdoutPath:
+            trackerG.close(childStdoutWriteFd)
         trackerG.close(childStderrWriteFd)
         if startupError is not None:
             self._eventLogger.warning('startup error: %s', startupError)
@@ -143,19 +298,21 @@ class Service(object):
                                  startupFailed=1))
             self._postExitCleanup()
         else:
-            self._stdinLogger = self._logger.getChild('inp')
-            self._stdinLogger.setLevel(logging.DEBUG)
+            if not stdinPath:
+                self._stdinLogger = self._logger.getChild('inp')
+                self._stdinLogger.setLevel(logging.DEBUG)
+                self._childStdin = self._proc.stdin
 
-            self._outLogger = (log.StreamLogger
-                               (childStdoutReadFd,
-                                self._logger.getChild('out'),
-                                label='%s.out' % self._name))
+            if not stdoutPath:
+                self._outLogger = (log.StreamLogger
+                                   (childStdoutReadFd,
+                                    self._logger.getChild('out'),
+                                    label='%s.out' % self._name))
 
             self._errLogger = (log.StreamLogger
                                (childStderrReadFd,
                                 self._logger.getChild('err'),
                                 label='%s.err' % self._name))
-            self._childStdin = self._proc.stdin
             self._setStatus(dict(status=statuslib.RUNNING,
                                  procStatus=statuslib.RUNNING,
                                  pid=self._proc.pid))
