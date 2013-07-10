@@ -36,3 +36,14 @@ def isActive(status):
 
 def isStartable(status):
     return status in STARTABLE_STATUS
+
+
+def getColor(status):
+    if status == RUNNING:
+        return '#80ff80'  # green
+    elif status == FAILED:
+        return '#ff8080'  # red
+    elif status in (STARTING, STOPPING):
+        return '#d0d0d0'  # gray
+    else:
+        return '#ffffff'  # white
