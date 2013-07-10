@@ -178,7 +178,6 @@ class Manager(object):
         svc = self._services.get(svcName)
         if svc is None:
             svc = Service(svcName,
-                          svcConfig,
                           self)
             self._services[svcName] = svc
 

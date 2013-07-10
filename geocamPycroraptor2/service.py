@@ -144,9 +144,8 @@ class PopenNoErrPipe(object):
 
 
 class Service(object):
-    def __init__(self, name, config, parent):
+    def __init__(self, name, parent):
         self._name = name
-        self._config = config
         self._proc = None
         self._childStdin = None
         self._tslineLogger = None
@@ -166,25 +165,28 @@ class Service(object):
         self._restart = False
         self._streamHandler = None
 
+    def getConfig(self):
+        return self._parent.getServiceConfig(self._name)
+
     def getCommand(self):
-        return self._config.get('command',
-                                self._name)
+        return self.getConfig().get('command',
+                                    self._name)
 
     def getLogNameTemplate(self):
-        return self._config.get('log',
-                                '${name}_${unique}.txt')
+        return self.getConfig().get('log',
+                                    '${name}_${unique}.txt')
 
     def getWorkingDir(self):
-        return self._config.get('cwd')
+        return self.getConfig().get('cwd')
 
     def getEnvVariables(self):
-        return self._config.get('env', {})
+        return self.getConfig().get('env', {})
 
     def getStdout(self):
-        return self._config.get('stdout')
+        return self.getConfig().get('stdout')
 
     def getStdin(self):
-        return self._config.get('stdin')
+        return self.getConfig().get('stdin')
 
     def openExternalStreams(self):
         """
