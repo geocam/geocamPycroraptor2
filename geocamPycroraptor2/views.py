@@ -22,10 +22,12 @@ def getPyraptordClient():
     return client
 
 
-def dashboard(request):
-    pyraptord = getPyraptordClient()
+def renderDashboard(request, pyraptord):
+    logDir = getattr(settings, 'SERVICES_LOG_DIR_URL', None)
+
     status = pyraptord.getStatusAll()
     serviceConfig = pyraptord.getConfig('SERVICES')
+
     configItems = serviceConfig.items()
     configItems.sort()
     tb = []
@@ -35,10 +37,33 @@ def dashboard(request):
         procMode = procStatus.get('status')
         procColor = statuslib.getColor(procMode)
         tb.append('<tr>')
-        tb.append('<td style="background-color: %s;">%s</td>' % (procColor, name))
+        tb.append('<td>%s</td>' % name)
         tb.append('<td style="background-color: %s;">%s</td>' % (procColor, procMode))
+        if logDir:
+            tb.append('<td><a href="%s%s_latest.txt">latest log</a></td>'
+                      % (logDir, name))
+            tb.append('<td><a href="%s%s_previous.txt">previous log</a></td>'
+                      % (logDir, name))
         tb.append('</tr>')
+
+    tb.append('<tr>')
+    if logDir:
+        tb.append('<td style="font-weight: bold;">pyraptord</td>')
+        tb.append('<td></td>')
+        tb.append('<td><a href="%spyraptord_latest.txt">latest log</a></td>'
+                  % logDir)
+        tb.append('<td><a href="%spyraptord_previous.txt">previous log</a></td>'
+                  % logDir)
+    tb.append('</tr>')
+
     tb.append('</table>')
+    tb.append('<div style="margin-top: 0.5em;"><a href="%s">all logs</a></div>' % logDir)
+
     return render_to_response('geocamPycroraptor2/dashboard.html',
                               {'html': ''.join(tb)},
                               context_instance=RequestContext(request))
+
+
+def dashboard(request):
+    pyraptord = getPyraptordClient()
+    return renderDashboard(request, pyraptord)
