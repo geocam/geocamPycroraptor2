@@ -4,12 +4,12 @@
 # All Rights Reserved.
 # __END_LICENSE__
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import url, patterns
 
 from geocamPycroraptor2 import views
 
 urlpatterns = patterns(
     '',
 
-    (r'^$', views.dashboard),
+    url(r'^$', views.dashboard, {}, name='geocamPycroraptor2_dashboard'),
 )
