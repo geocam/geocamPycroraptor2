@@ -12,7 +12,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
 import zerorpc
 
 from geocamPycroraptor2 import status as statuslib
@@ -51,6 +51,7 @@ def renderDashboard(request, pyraptord=None, cmd=None, response=None):
                   % (cmd, response))
     tb.append('<div style="margin: 0.5em; font-size: 1.2em; "><a href="." style="font-size: 1.2em;">refresh</a></div>')
     tb.append('<form method="post" action=".">')
+    tb.append('<input type="hidden" name="csrfmiddlewaretoken" value="%s"/>' % get_token(request))
     tb.append('<table>')
     for name, cfg in configItems:
         procStatus = status.get(name, {'status': 'notStarted'})
@@ -111,7 +112,6 @@ def runCommand(request, cmd, svcName):
                            response=response)
 
 
-@csrf_exempt
 def dashboard(request):
     if request.method == 'POST':
         cmdPair = request.POST.get('cmd', None)
