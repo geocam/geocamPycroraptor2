@@ -106,8 +106,8 @@ Examples of how to start and stop the ``pyraptord`` daemon:
 
  * On Mac OS X::
 
-     launchctl load /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
-     launchctl unload /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
+     sudo launchctl load /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
+     sudo launchctl unload /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
      man launchctl
 
 To control Pycroraptor2, run ``zclient.py -p ports.json`` using the same
