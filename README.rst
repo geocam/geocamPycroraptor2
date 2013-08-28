@@ -1,6 +1,6 @@
 
 Pycroraptor2 is a process manager, essentially intended to be a Python
-replacement for the `Microraptor Process Manager
+replacement for the `Microraptor process manager
 <http://www.microraptor.org/>`_. Pycroraptor2 is in a working state but
 is not yet a feature-complete replacement for Microraptor.
 
@@ -71,7 +71,7 @@ Examples for these files can be found in the ``tests`` subdirectory of
 the Pycroraptor2 repo.
 
 Pycroraptor2 is often used to manage persistent processes that are
-started on boot. To make that happen::
+started on boot. To make that happen:
 
  * You need to install a boot script for Pycroraptor2 that brings up the
    ``pyraptord`` instance for that host. See the `Boot Script`_ section
@@ -92,6 +92,25 @@ Each boot script contains its own platform-specific install instructions.
 
 Operation
 ~~~~~~~~~
+
+Examples of how to start and stop the ``pyraptord`` daemon on RedHat
+Enterprise Linux::
+
+  sudo service pyraptord start
+  sudo service pyraptord stop
+  sudo service pyraptord restart
+  sudo service pyraptord status
+
+To control Pycroraptor2, run ``zclient.py`` with the same ``ports.json``
+file you used with ``pyraptord``, and try some of these example
+commands::
+
+  help(pyraptord)
+  pyraptord.getStatusAll()
+  pyraptord.getStatus('service1')
+  pyraptord.start('service2')
+  pyraptord.stop('service3')
+  pyraptord.restart('service4')
 
 .. o __BEGIN_LICENSE__
 .. o Copyright (C) 2008-2010 United States Government as represented by
