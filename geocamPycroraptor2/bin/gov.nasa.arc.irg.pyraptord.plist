@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+
+This launchd boot script was tested under Mac OS X 10.8.3. To use:
+
+ * Edit paths to match your deployment configuration.
+ * Install this file in /Library/LaunchDaemons/
+ * Run 'launchctl load /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist'
+
+-->
+<plist version="1.0">
+<dict>
+	<key>Disabled</key>
+	<false/>
+	<key>ExitTimeOut</key>
+	<integer>604800</integer>
+	<key>Label</key>
+	<string>gov.nasa.arc.irg.pyraptord</string>
+	<key>OnDemand</key>
+	<false/>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python</string>
+		<string>/Users/irg/xgds_plrp/apps/geocamPycroraptor2/bin/pyraptord.py</string>
+		<string>-f</string>
+		<string>-c</string>
+		<string>/Users/irg/xgds_plrp/apps/plrpExplorer/pycroraptor.json</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/irg/xgds_plrp</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+	  <key>DJANGO_SCRIPT_NAME</key>
+	  <string>/</string>
+	  <key>PYTHONPATH</key>
+	  <string>/Users/irg:/Users/irg/xgds_plrp/apps:$PYTHONPATH</string>
+	  <key>DJANGO_SETTINGS_MODULE</key>
+	  <string>xgds_plrp.settings</string>
+	  <key>PYTHON_EGG_CACHE</key>
+	  <string>/tmp</string>
+	</dict>
+	<key>ServiceIPC</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/irg/xgds_plrp/data/pyraptord/stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/irg/xgds_plrp/data/pyraptord/stdout.log</string>
+</dict>
+</plist>

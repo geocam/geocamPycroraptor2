@@ -88,7 +88,9 @@ subdirectory of the Pycroraptor2 repo, for the following platforms:
 
  * RedHat Enterprise Linux 6 (``pyraptord_boot_script_rhel``)
 
-Each boot script contains its own platform-specific install instructions.
+ * Mac OS X 10.8.3 Mountain Lion (``gov.nasa.arc.irg.pyraptord.plist``)
+
+Look within each boot script to find platform-specific install instructions.
 
 Operation
 ~~~~~~~~~
