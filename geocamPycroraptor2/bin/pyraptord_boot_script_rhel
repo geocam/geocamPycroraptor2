@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# pyraptord        Startup script for pyraptord
+#
+# chkconfig: 2345 92 8
+# description: Pyraptord is a process manager
+# processname: pyraptord
+# config: /usr/local/irg/releases/lakelander/main_lake_lander/python/config/pycroraptor.json
+# config: /usr/local/irg/releases/lakelander/main_lake_lander/python/config/ports.json
+# pidfile: /data/log/pyraptord/pyraptord.pid
+
+# This boot script was tested under RedHat Enterprise Linux 6. To use:
+# * Edit paths to match your deployment configuration.
+# * Install this file as /etc/init.d/pyraptord
+# * You may need to install chkconfig: 'yum install chkconfig'.
+# * Run 'chkconfig --add pyraptord'
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+projdir=/usr/local/irg/releases/lakelander
+pyraptord=$projdir/xgds_lake_lander/apps/geocamPycroraptor2/bin/pyraptord.py
+config_dir=$projdir/main_lake_lander/python/config
+python_dir=/usr/local/irg/packages/i686_linux_gcc4.1/python/bin
+user=root
+
+sudo -H -u $user bash -s <<EOF
+export PATH=${python_dir}:$PATH  # run the correct python, if not first in default PATH
+source $projdir/xgds_lake_lander/sourceme.sh  # further environment setup, if needed
+cd $config_dir
+$pyraptord -c $config_dir/pycroraptor.json $1
+EOF
