@@ -95,17 +95,24 @@ Look within each boot script to find platform-specific install instructions.
 Operation
 ~~~~~~~~~
 
-Examples of how to start and stop the ``pyraptord`` daemon on RedHat
-Enterprise Linux::
+Examples of how to start and stop the ``pyraptord`` daemon:
 
-  sudo service pyraptord start
-  sudo service pyraptord stop
-  sudo service pyraptord restart
-  sudo service pyraptord status
+ * On RedHat Enterprise Linux::
 
-To control Pycroraptor2, run ``zclient.py`` with the same ``ports.json``
-file you used with ``pyraptord``, and try some of these example
-commands::
+     sudo service pyraptord start
+     sudo service pyraptord stop
+     sudo service pyraptord restart
+     sudo service pyraptord status
+
+ * On Mac OS X::
+
+     launchctl load /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
+     launchctl unload /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
+     man launchctl
+
+To control Pycroraptor2, run ``zclient.py -p ports.json`` using the same
+``ports.json`` file you used with ``pyraptord``, and try some of these
+example commands::
 
   help(pyraptord)
   pyraptord.getStatusAll()
