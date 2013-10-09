@@ -15,6 +15,10 @@ import gevent
 import gevent.monkey
 gevent.monkey.patch_all(thread=False)
 
+import zerorpc
+
+from geocamUtil.gevent.qrouter import QueueRouter
+
 from geocamPycroraptor2.util import loadConfig, ConfigField
 from geocamPycroraptor2.service import Service
 from geocamPycroraptor2.signals import SIG_VERBOSE
@@ -43,6 +47,7 @@ class Manager(object):
         self._shutdownCmd = None
         self._preQuitHandler = None
         self._postQuitHandler = None
+        self._qrouter = QueueRouter()
 
     def _getSignalsToHandle(self):
         return [signal.SIGHUP, signal.SIGINT, signal.SIGTERM]
@@ -319,3 +324,24 @@ class Manager(object):
         Update config for *svcName* with members from *valueDict*.
         """
         self.updateConfig('SERVICES.' + svcName, valueDict)
+
+    @zerorpc.stream
+    def subscribe(self, topicPattern):
+        """
+        Subscribe to messages whose topic matches *topicPattern*, which
+        is a string that can include Unix shell-style wildcards.
+
+        This method returns a streaming response. Messages in the stream
+        will be strings in the same format as lines in pyraptord log
+        files. The second entry in a log file line is the topic. Example topic patterns:
+
+        '*': All messages
+        'service.foo.*': All messages about service 'foo'
+        'service.foo.out': Stdout console output from service 'foo'
+        'service.foo.err': Stderr console output from service 'foo'
+        'service.foo.inp': Stdin console input to service 'foo'
+        'service.foo.evt': Events for service 'foo' (start, stop, etc)
+        """
+        q = self._qrouter.subscribe(topicPattern)
+        for topic, msg in q:
+            yield msg

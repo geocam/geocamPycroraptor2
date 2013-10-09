@@ -187,3 +187,20 @@ class StreamLogger(object):
     def stop(self):
         self._job.kill()
         # could probably more thoroughly flush things
+
+
+class PublishHandler(logging.Handler):
+    def __init__(self, publisher):
+        super(PublishHandler, self).__init__()
+        self._p = publisher
+    
+    def emit(self, record):
+        try:
+            if not self._p.hasSubscribers():
+                return
+            text = self.format(record)
+            timestamp, topic, _ = text.split(' ', 2)
+            self._p.publish(topic, text)
+        except:
+            logging.warning(traceback.format_exc())
+            logging.warning('could not publish message, continuing')
