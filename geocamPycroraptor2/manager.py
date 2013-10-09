@@ -342,6 +342,12 @@ class Manager(object):
         'service.foo.inp': Stdin console input to service 'foo'
         'service.foo.evt': Events for service 'foo' (start, stop, etc)
         """
-        q = self._qrouter.subscribe(topicPattern)
-        for topic, msg in q:
-            yield msg
+        q = None
+        try:
+            q = self._qrouter.subscribe(topicPattern)
+            for topic, msg in q:
+                yield msg
+        finally:
+            if q:
+                self._logger.info('subscriber disconnected from %s', topicPattern)
+                self._qrouter.unsubscribe(q)
