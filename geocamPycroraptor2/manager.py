@@ -331,9 +331,16 @@ class Manager(object):
         Subscribe to messages whose topic matches *topicPattern*, which
         is a string that can include Unix shell-style wildcards.
 
-        This method returns a streaming response. Messages in the stream
-        will be strings in the same format as lines in pyraptord log
-        files. The second entry in a log file line is the topic. Example topic patterns:
+        This method returns an infinite message stream you can iterate
+        through.
+
+        The first message in the stream is the integer *subscriptionId*
+        which can be passed later to the unsubscribe() method.
+        Subsequent messages in the stream will be strings in the same
+        format as lines in pyraptord log files. (The second entry in a
+        log file line is the topic.)
+
+        Example topic patterns:
 
         '*': All messages
         'service.foo.*': All messages about service 'foo'
@@ -345,9 +352,26 @@ class Manager(object):
         q = None
         try:
             q = self._qrouter.subscribe(topicPattern)
+            yield id(q)
             for topic, msg in q:
                 yield msg
         finally:
             if q:
-                self._logger.info('subscriber disconnected from %s', topicPattern)
+                self._logger.info('cleaning up subscription to %s', topicPattern)
                 self._qrouter.unsubscribe(q)
+
+    def unsubscribe(self, subscriptionId):
+        """
+        Stop receiving messages for the subscription with the given
+        *subscriptionId*.
+
+        You can find the *subscriptionId* in the stream returned by the
+        subscribe() call; it is the first value in the stream.
+        """
+        topicPattern, q = self._qrouter.getQueueInfo(subscriptionId)
+        self._logger.info('subscriber explicitly unsubscribed from %s',
+                          topicPattern)
+        # sending StopIteration signals the end of the stream to the
+        # client side and triggers the 'finally' clause in the
+        # subscribe() method to clean up.
+        q.put(StopIteration)
