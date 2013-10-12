@@ -20,7 +20,7 @@ def cleanIfExists(path):
             print 'could not delete file %s', path
 
 
-def daemonize(name, logFile):
+def daemonize(name, logFile, detachTty=True):
     os.chdir('/')
     os.umask(0)
 
@@ -39,14 +39,15 @@ def daemonize(name, logFile):
     sys.stdout = log.TimestampingStream('%s.out' % name, sys.stdout)
     sys.stderr = log.TimestampingStream('%s.err' % name, sys.stderr)
 
-    # detach from tty
-    pid = os.fork()
-    if pid:
-        os._exit(0)
-    os.setsid()
-    pid = os.fork()
-    if pid:
-        os._exit(0)
+    if detachTty:
+        # detach from tty
+        pid = os.fork()
+        if pid:
+            os._exit(0)
+        os.setsid()
+        pid = os.fork()
+        if pid:
+            os._exit(0)
 
 
 class Daemon(object):

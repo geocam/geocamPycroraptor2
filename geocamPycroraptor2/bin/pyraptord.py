@@ -47,6 +47,9 @@ def main():
     parser.add_option('-f', '--foreground',
                       action='store_true', default=False,
                       help='Run in foreground (do not daemonize)')
+    parser.add_option('--noFork',
+                      action='store_true', default=False,
+                      help='Do not fork at startup (use when running under upstart)')
     parser.add_option('-n', '--name',
                       help='Name of pyraptord zerorpc service [%default]',
                       default='pyraptord')

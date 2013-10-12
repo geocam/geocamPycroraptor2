@@ -98,7 +98,8 @@ class Manager(object):
 
         if not self._opts.foreground:
             self._logger.debug('daemonizing')
-            daemonize.daemonize('pyraptord', self._logFile)
+            daemonize.daemonize('pyraptord', self._logFile,
+                                detachTty=not self._opts.noFork)
 
         # start startup services
         self._services = {}
