@@ -10,6 +10,7 @@ import logging
 import signal
 import shlex
 import subprocess
+import traceback
 
 import gevent
 import gevent.monkey
@@ -23,6 +24,8 @@ from geocamPycroraptor2.util import loadConfig, ConfigField
 from geocamPycroraptor2.service import Service
 from geocamPycroraptor2.signals import SIG_VERBOSE
 from geocamPycroraptor2 import prexceptions, daemonize, log
+
+# pylint: disable=E1102
 
 
 class Manager(object):
@@ -48,6 +51,12 @@ class Manager(object):
         self._preQuitHandler = None
         self._postQuitHandler = None
         self._qrouter = QueueRouter()
+        self._services = {}
+        self._jobs = []
+        self._port = None
+        self._ports = None
+        self._logPath = None
+        self._logFile = None
 
     def _getSignalsToHandle(self):
         return [signal.SIGHUP, signal.SIGINT, signal.SIGTERM]
@@ -77,7 +86,7 @@ class Manager(object):
                                                 ('pyraptord',
                                                  logPathTemplate,
                                                  {}))
-            except:
+            except:  # pylint: disable=W0702
                 self._logger.error('could not open log file %s!', logPathTemplate)
 
         if self._logFile is not None:
@@ -102,7 +111,6 @@ class Manager(object):
                                 detachTty=not self._opts.noFork)
 
         # start startup services
-        self._services = {}
         if 'startup' in self._config.GROUPS:
             startupGroup = self._config.GROUPS.startup
             self._logger.debug('startup group: %s', startupGroup)
@@ -110,9 +118,7 @@ class Manager(object):
                 self.start(svcName)
         else:
             self._logger.debug('no group named "startup"')
-        self._jobs = []
         self._jobs.append(gevent.spawn(self._cleanupChildren))
-
 
     def _handleSignal(self, sigNum='unknown', frame=None):
         if sigNum in SIG_VERBOSE:
@@ -354,7 +360,7 @@ class Manager(object):
         try:
             q = self._qrouter.subscribe(topicPattern)
             yield id(q)
-            for topic, msg in q:
+            for _topic, msg in q:
                 yield msg
         finally:
             if q:

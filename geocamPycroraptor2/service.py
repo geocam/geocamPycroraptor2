@@ -11,7 +11,6 @@ import os
 import signal
 import errno
 import sys
-import os
 import fcntl
 import traceback
 
@@ -27,7 +26,7 @@ from geocamPycroraptor2 import status as statuslib
 
 try:
     MAXFD = os.sysconf("SC_OPEN_MAX")
-except:
+except:  # pylint: disable=W0702
     MAXFD = 256
 
 
@@ -103,7 +102,7 @@ class PopenNoErrPipe(object):
 
                 assert False, 'should never reach this point'
 
-            except:
+            except:  # pylint: disable=W0702
                 print >> sys.stderr, traceback.format_exc()
                 print >> sys.stderr, 'service startup failed'
                 os._exit(1)
@@ -210,14 +209,13 @@ class Service(object):
         if stdoutPath:
             try:
                 fd = os.open(stdoutPath, os.O_WRONLY)
-            except:
+            except:  # pylint: disable=W0702
                 print >> sys.stderr, traceback.format_exc()
                 print >> sys.stderr, 'could not open %s for writing' % stdoutPath
                 os._exit(1)
             assert fd >= 0
             os.dup2(fd, 1)
             os.close(fd)
-
 
     def start(self):
         if not self.isStartable():
@@ -242,7 +240,7 @@ class Service(object):
                                      (self._name,
                                       logPath,
                                       self._env))
-            except:
+            except:  # pylint: disable=W0702
                 self._parent._logger.warning('could not open log file for service "%s" at path "%s"',
                                              self._name, logPath)
 
@@ -280,7 +278,7 @@ class Service(object):
 
         childEnv = os.environ.copy()
         for k, v in self.getEnvVariables().iteritems():
-            if v == None:
+            if v is None:
                 if k in childEnv:
                     del childEnv[k]
             else:
@@ -385,7 +383,7 @@ class Service(object):
         self._status = statusDict['status']
 
     def _cleanup(self):
-        if self._proc and self._proc.poll() != None:
+        if self._proc and self._proc.poll() is not None:
             # process exited
 
             # bit of a hack... leave some time to collect console

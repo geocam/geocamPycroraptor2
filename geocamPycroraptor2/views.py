@@ -7,11 +7,9 @@
 import sys
 import json
 
-from django.http import HttpResponse, HttpResponseNotAllowed, Http404, HttpResponseBadRequest
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.middleware.csrf import get_token
 import zerorpc
 
@@ -53,7 +51,7 @@ def renderDashboard(request, pyraptord=None, cmd=None, response=None):
     tb.append('<form method="post" action=".">')
     tb.append('<input type="hidden" name="csrfmiddlewaretoken" value="%s"/>' % get_token(request))
     tb.append('<table>')
-    for name, cfg in configItems:
+    for name, _cfg in configItems:
         procStatus = status.get(name, {'status': 'notStarted'})
         procMode = procStatus.get('status')
         procColor = statuslib.getColor(procMode)
@@ -93,8 +91,8 @@ def runCommandInternal(pyraptord, cmd, svcName):
     response = 'ok'
     try:
         pyraptord(cmd, svcName)
-    except:
-        excType, excValue, excTb = sys.exc_info()
+    except:  # pylint: disable=W0702
+        excType, excValue, _excTb = sys.exc_info()
         response = ('%s.%s: %s'
                     % (excType.__module__,
                        excType.__name__,

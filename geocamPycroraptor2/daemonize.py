@@ -25,7 +25,7 @@ def daemonize(name, logFile, detachTty=True):
     os.umask(0)
 
     # close stdin
-    devNull = file('/dev/null', 'rw')
+    devNull = open('/dev/null', 'w')
     os.dup2(devNull.fileno(), 0)
 
     if logFile is None:
@@ -75,8 +75,8 @@ class Daemon(object):
             f = open(self._pidPath, 'w')
             f.write('%d\n' % os.getpid())
             f.close()
-        except:
-            print >>sys.stderr, 'could not write pid to path "%s"' % self._pidPath
+        except:  # pylint: disable=W0702
+            print >> sys.stderr, 'could not write pid to path "%s"' % self._pidPath
 
     def removePid(self):
         cleanIfExists(self._pidPath)

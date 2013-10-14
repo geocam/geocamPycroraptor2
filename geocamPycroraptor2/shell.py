@@ -4,6 +4,8 @@
 # All Rights Reserved.
 # __END_LICENSE__
 
+# pylint: disable=E0611
+
 import gevent
 import gevent.monkey
 gevent.monkey.patch_all(thread=False)
@@ -25,6 +27,7 @@ This is an IPython shell with the pyraptord zerorpc service bound to the
 ipshell = InteractiveShellEmbed(config=Config(),
                                 banner1=INTRO)
 
+
 def inputhook_gevent():
     try:
         while not stdin_ready():
@@ -36,13 +39,14 @@ def inputhook_gevent():
 # tell ipython to use gevent as the mainloop
 inputhook_manager.set_inputhook(inputhook_gevent)
 
+
 class Shell(object):
     def __init__(self, configPath):
         self._config = loadConfig(configPath)
         self._ports = loadConfig(self._config.PORTS)
 
     def run(self):
-        port = self._ports.pyraptord
+        port = self._ports.pyraptord.rpc
         print 'connecting to pyraptord at %s' % port
         d = zerorpc.Client(port)  # pylint: disable=W0612
         ipshell()

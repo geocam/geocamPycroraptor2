@@ -9,6 +9,7 @@ import re
 import datetime
 from string import Template
 import logging
+import traceback
 
 import gevent
 
@@ -106,6 +107,7 @@ class AutoFlushStreamHandler(logging.StreamHandler):
 
 class LineBuffer(logging.Handler):
     def __init__(self, maxSize=2048):
+        super(LineBuffer, self).__init__()
         self._maxSize = maxSize
         self._lines = []
         self._lineCount = 0
@@ -193,14 +195,14 @@ class PublishHandler(logging.Handler):
     def __init__(self, publisher):
         super(PublishHandler, self).__init__()
         self._p = publisher
-    
+
     def emit(self, record):
         try:
             if not self._p.hasSubscribers():
                 return
             text = self.format(record)
-            timestamp, topic, _ = text.split(' ', 2)
+            _, topic, _ = text.split(' ', 2)
             self._p.publish(topic, text)
-        except:
+        except:  # pylint: disable=W0702
             logging.warning(traceback.format_exc())
             logging.warning('could not publish message, continuing')
