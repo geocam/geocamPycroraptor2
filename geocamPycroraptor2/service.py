@@ -390,7 +390,7 @@ class Service(object):
 
             # bit of a hack... leave some time to collect console
             # output. needs to be longer than the refresh period in
-            # geocamUtil.gevent.util.copyFileToQueue()
+            # geocamUtil.geventUtil.util.copyFileToQueue()
             gevent.sleep(0.15)
 
             if self._proc.returncode < 0:

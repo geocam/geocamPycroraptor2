@@ -12,7 +12,7 @@ import logging
 
 import gevent
 
-from geocamUtil.gevent.util import queueFromFile, LineParser
+from geocamUtil.geventUtil.util import queueFromFile, LineParser
 
 from geocamPycroraptor2.util import trackerG
 

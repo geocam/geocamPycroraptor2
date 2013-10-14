@@ -17,7 +17,7 @@ gevent.monkey.patch_all(thread=False)
 
 import zerorpc
 
-from geocamUtil.gevent.qrouter import QueueRouter
+from geocamUtil.geventUtil.qrouter import QueueRouter
 
 from geocamPycroraptor2.util import loadConfig, ConfigField
 from geocamPycroraptor2.service import Service
