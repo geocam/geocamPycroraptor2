@@ -163,7 +163,7 @@ class Service(object):
         self._setStatus({'status': statuslib.NOT_STARTED})
         self._restart = False
         self._streamHandler = None
-        self._publishHandler = None
+        # self._publishHandler = None
 
     def getConfig(self):
         return self._parent.getServiceConfig(self._name)
@@ -252,10 +252,10 @@ class Service(object):
             self._streamHandler.setFormatter(fmt)
             self._logger.addHandler(self._streamHandler)
 
-            self._publishHandler = log.PublishHandler(self._parent._qrouter)
-            self._publishHandler.setLevel(logging.DEBUG)
-            self._publishHandler.setFormatter(fmt)
-            self._logger.addHandler(self._publishHandler)
+            #self._publishHandler = log.PublishHandler(self._parent._qrouter)
+            #self._publishHandler.setLevel(logging.DEBUG)
+            #self._publishHandler.setFormatter(fmt)
+            #self._logger.addHandler(self._publishHandler)
 
         stdinPath = self.getStdin()
         if stdinPath is None:
@@ -436,9 +436,9 @@ class Service(object):
         if self._streamHandler:
             self._logger.removeHandler(self._streamHandler)
             self._streamHandler = None
-        if self._publishHandler:
-            self._logger.removeHandler(self._publishHandler)
-            self._publishHandler = None
+        #if self._publishHandler:
+        #    self._logger.removeHandler(self._publishHandler)
+        #    self._publishHandler = None
         if self._log:
             self._log.close()
             self._log = None

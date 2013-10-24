@@ -16,9 +16,9 @@ import gevent
 import gevent.monkey
 gevent.monkey.patch_all(thread=False)
 
-import zerorpc
+# import zerorpc
 
-from geocamUtil.geventUtil.qrouter import QueueRouter
+# from geocamUtil.geventUtil.qrouter import QueueRouter
 
 from geocamPycroraptor2.util import loadConfig, ConfigField
 from geocamPycroraptor2.service import Service
@@ -50,7 +50,7 @@ class Manager(object):
         self._shutdownCmd = None
         self._preQuitHandler = None
         self._postQuitHandler = None
-        self._qrouter = QueueRouter()
+        # self._qrouter = QueueRouter()
         self._services = {}
         self._jobs = []
         self._port = None
@@ -332,53 +332,53 @@ class Manager(object):
         """
         self.updateConfig('SERVICES.' + svcName, valueDict)
 
-    @zerorpc.stream
-    def subscribe(self, topicPattern):
-        """
-        Subscribe to messages whose topic matches *topicPattern*, which
-        is a string that can include Unix shell-style wildcards.
+    # @zerorpc.stream
+    # def subscribe(self, topicPattern):
+    #     """
+    #     Subscribe to messages whose topic matches *topicPattern*, which
+    #     is a string that can include Unix shell-style wildcards.
 
-        This method returns an infinite message stream you can iterate
-        through.
+    #     This method returns an infinite message stream you can iterate
+    #     through.
 
-        The first message in the stream is the integer *subscriptionId*
-        which can be passed later to the unsubscribe() method.
-        Subsequent messages in the stream will be strings in the same
-        format as lines in pyraptord log files. (The second entry in a
-        log file line is the topic.)
+    #     The first message in the stream is the integer *subscriptionId*
+    #     which can be passed later to the unsubscribe() method.
+    #     Subsequent messages in the stream will be strings in the same
+    #     format as lines in pyraptord log files. (The second entry in a
+    #     log file line is the topic.)
 
-        Example topic patterns:
+    #     Example topic patterns:
 
-        '*': All messages
-        'service.foo.*': All messages about service 'foo'
-        'service.foo.out': Stdout console output from service 'foo'
-        'service.foo.err': Stderr console output from service 'foo'
-        'service.foo.inp': Stdin console input to service 'foo'
-        'service.foo.evt': Events for service 'foo' (start, stop, etc)
-        """
-        q = None
-        try:
-            q = self._qrouter.subscribe(topicPattern)
-            yield id(q)
-            for _topic, msg in q:
-                yield msg
-        finally:
-            if q:
-                self._logger.info('cleaning up subscription to %s', topicPattern)
-                self._qrouter.unsubscribe(q)
+    #     '*': All messages
+    #     'service.foo.*': All messages about service 'foo'
+    #     'service.foo.out': Stdout console output from service 'foo'
+    #     'service.foo.err': Stderr console output from service 'foo'
+    #     'service.foo.inp': Stdin console input to service 'foo'
+    #     'service.foo.evt': Events for service 'foo' (start, stop, etc)
+    #     """
+    #     q = None
+    #     try:
+    #         q = self._qrouter.subscribe(topicPattern)
+    #         yield id(q)
+    #         for _topic, msg in q:
+    #             yield msg
+    #     finally:
+    #         if q:
+    #             self._logger.info('cleaning up subscription to %s', topicPattern)
+    #             self._qrouter.unsubscribe(q)
 
-    def unsubscribe(self, subscriptionId):
-        """
-        Stop receiving messages for the subscription with the given
-        *subscriptionId*.
+    # def unsubscribe(self, subscriptionId):
+    #     """
+    #     Stop receiving messages for the subscription with the given
+    #     *subscriptionId*.
 
-        You can find the *subscriptionId* in the stream returned by the
-        subscribe() call; it is the first value in the stream.
-        """
-        topicPattern, q = self._qrouter.getQueueInfo(subscriptionId)
-        self._logger.info('subscriber explicitly unsubscribed from %s',
-                          topicPattern)
-        # sending StopIteration signals the end of the stream to the
-        # client side and triggers the 'finally' clause in the
-        # subscribe() method to clean up.
-        q.put(StopIteration)
+    #     You can find the *subscriptionId* in the stream returned by the
+    #     subscribe() call; it is the first value in the stream.
+    #     """
+    #     topicPattern, q = self._qrouter.getQueueInfo(subscriptionId)
+    #     self._logger.info('subscriber explicitly unsubscribed from %s',
+    #                       topicPattern)
+    #     # sending StopIteration signals the end of the stream to the
+    #     # client side and triggers the 'finally' clause in the
+    #     # subscribe() method to clean up.
+    #     q.put(StopIteration)
