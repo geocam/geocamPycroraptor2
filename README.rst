@@ -86,11 +86,11 @@ Boot Script
 Example boot scripts for ``pyraptord`` are available in the ``bin``
 subdirectory of the Pycroraptor2 repo, for the following platforms:
 
- * RedHat Enterprise Linux 6 (``pyraptord_boot_script_rhel``)
+ * RedHat Enterprise Linux 6 (``boot_script_redhat_pyraptord``)
 
- * Ubuntu Linux 12.04 (``ubuntu_pyraptord.conf``)
+ * Ubuntu Linux 12.04 (``boot_script_ubuntu_pyraptord.conf``)
 
- * Mac OS X 10.8.3 Mountain Lion (``gov.nasa.arc.irg.pyraptord.plist``)
+ * Mac OS X 10.8.3 Mountain Lion (``boot_script_macosx_gov.nasa.arc.irg.pyraptord.plist``)
 
 Look within each boot script to find platform-specific install instructions.
 
