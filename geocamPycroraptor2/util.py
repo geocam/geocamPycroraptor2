@@ -10,6 +10,7 @@ import logging
 import errno
 import time
 import json
+import subprocess
 
 import gevent
 
@@ -55,9 +56,31 @@ trackerG = FdTracker()
 
 
 def loadConfig(path):
-    f = open(path, 'r')
-    j = json.load(f)
-    return convertToDotDictRecurse(j)
+    configObject = None
+
+    # if config file is valid JSON, interpret it as JSON
+    text = open(path, 'r').read()
+    try:
+        configObject = json.loads(text)
+    except ValueError:
+        if os.access(path, os.X_OK):
+            pass
+        else:
+            raise
+
+    # fallback plan -- execute config file and use its output
+    if configObject is None:
+        logging.info('config file "%s" is executable; running it and using output as config data',
+                     path)
+        p = os.path.abspath(path)
+        proc = subprocess.Popen([p], stdout=subprocess.PIPE)
+        stdoutData, _stderrData = proc.communicate()
+        if proc.returncode != 0:
+            logging.warning('executing config file "%s" failed with return code %s',
+                            path, proc.returncode)
+        configObject = json.loads(stdoutData)
+
+    return convertToDotDictRecurse(configObject)
 
 
 class ConfigField(object):
