@@ -106,13 +106,6 @@ Examples of how to start and stop the ``pyraptord`` daemon:
      sudo service pyraptord restart
      sudo service pyraptord status
 
- * On Ubuntu Linux::
-
-     sudo start pyraptord
-     sudo stop pyraptord
-     sudo restart pyraptord
-     sudo status pyraptord
-
  * On Mac OS X::
 
      sudo launchctl load /Library/LaunchDaemons/gov.nasa.arc.irg.pyraptord.plist
