@@ -16,9 +16,9 @@ import zerorpc
 from geocamPycroraptor2 import status as statuslib
 
 
-def getPyraptordClient():
+def getPyraptordClient(clientName='pyraptord'):
     ports = json.loads(file(settings.ZEROMQ_PORTS, 'r').read())
-    rpcPort = ports['pyraptord']['rpc']
+    rpcPort = ports[clientName]['rpc']
     client = zerorpc.Client(rpcPort)
     return client
 
@@ -119,3 +119,10 @@ def dashboard(request):
             return runCommand(request, cmd, svcName)
 
     return renderDashboard(request)
+
+
+def stopPyraptordServiceIfRunning(pyraptord, svcName):
+    try:
+        pyraptord.stop(svcName)
+    except zerorpc.RemoteError:
+        pass
