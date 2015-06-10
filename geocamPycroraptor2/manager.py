@@ -86,7 +86,9 @@ class Manager(object):
                                                 ('pyraptord',
                                                  logPathTemplate,
                                                  {}))
-            except:  # pylint: disable=W0702
+            except Exception as e:  # pylint: disable=W0702
+                import traceback
+                traceback.print_exc()
                 self._logger.error('could not open log file %s!', logPathTemplate)
 
         if self._logFile is not None:
