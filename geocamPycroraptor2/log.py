@@ -7,6 +7,8 @@
 import os
 import re
 import datetime
+import pytz
+
 from string import Template
 import logging
 import traceback
@@ -32,7 +34,7 @@ class UtcFormatter(logging.Formatter):
 
 def getFileNameTimeString(timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.utcnow()
+        timestamp = datetime.datetime.now(pytz.utc)
     us = timestamp.microsecond
     seconds = timestamp.strftime('%Y-%m-%d-%H%M%S')
     return '%s-%06d-UTC' % (seconds, us)
