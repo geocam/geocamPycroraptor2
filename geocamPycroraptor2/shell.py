@@ -21,7 +21,7 @@ INTRO = """
 Welcome to pyrterm!
 
 This is an IPython shell with the pyraptord zerorpc service bound to the
-"d" variable. You can run commands like d.start("mytask").
+"d" variable. You can run commands like d.startService("mytask").
 """
 
 ipshell = InteractiveShellEmbed(config=Config(),

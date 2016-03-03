@@ -117,7 +117,7 @@ class Manager(object):
             startupGroup = self._config.GROUPS.startup
             self._logger.debug('startup group: %s', startupGroup)
             for svcName in startupGroup:
-                self.start(svcName)
+                self.startService(svcName)
         else:
             self._logger.debug('no group named "startup"')
         self._jobs.append(gevent.spawn(self._cleanupChildren))
@@ -197,7 +197,7 @@ class Manager(object):
 
         return svc
 
-    def start(self, svcName):
+    def startService(self, svcName):
         """
         Start *svcName*.
         """
