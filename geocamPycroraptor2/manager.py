@@ -210,7 +210,7 @@ class Manager(object):
         """
         self._getService(svcName).stdin(text)
 
-    def stop(self, svcName):
+    def stopService(self, svcName):
         """
         Stop *svcName*.
         """

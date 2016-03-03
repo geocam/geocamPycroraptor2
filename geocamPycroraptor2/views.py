@@ -123,6 +123,6 @@ def dashboard(request):
 
 def stopPyraptordServiceIfRunning(pyraptord, svcName):
     try:
-        pyraptord.stop(svcName)
+        pyraptord.stopService(svcName)
     except zerorpc.RemoteError:
         pass
