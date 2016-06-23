@@ -13,6 +13,7 @@ import errno
 import sys
 import fcntl
 import traceback
+import time
 
 import gevent
 import gevent.monkey
@@ -377,6 +378,12 @@ class Service(object):
         if self._proc:
             self._eventLogger.warning('service did not stop after first attempt, sending SIGKILL signal')
             self._proc.send_signal(signal.SIGKILL)
+            time.sleep(5)
+        if self._proc:
+            self._eventLogger.warning('service did not stop after second attempt, sending SIGKILL signal')
+            self._proc.send_signal(signal.SIGKILL)
+            time.sleep(5)
+            self._eventLogger.error('SERVICE DID NOT STOP YOU MUST KILL IT YOURSELF')
 
     def _setStatus(self, statusDict):
         self._statusDict = statusDict
