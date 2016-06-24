@@ -373,15 +373,15 @@ class Service(object):
     def _stopInternal(self):
         if self._proc:
             self._eventLogger.warning('received stop command, sending SIGTERM signal')
-            self._proc.send_signal(signal.SIGTERM)
-        gevent.sleep(5)
+            self._proc.terminate()
+        time.sleep(5)
         if self._proc:
             self._eventLogger.warning('service did not stop after first attempt, sending SIGKILL signal')
-            self._proc.send_signal(signal.SIGKILL)
+            self._proc.kill()
             time.sleep(5)
         if self._proc:
             self._eventLogger.warning('service did not stop after second attempt, sending SIGKILL signal')
-            self._proc.send_signal(signal.SIGKILL)
+            self._proc.kill()
             time.sleep(5)
             self._eventLogger.error('SERVICE DID NOT STOP YOU MUST KILL IT YOURSELF')
 
