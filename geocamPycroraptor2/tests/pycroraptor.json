@@ -1,5 +1,5 @@
 {
-    "PORTS": "ports.json",
+    "PORTS": "/home/vagrant/georef/apps/georefApp/ports.json",
     "LOG_DIR": "/tmp/pyraptord/logs",
 
     "SERVICES": {
