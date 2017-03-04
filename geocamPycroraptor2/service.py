@@ -402,6 +402,8 @@ class Service(object):
                 sigNum = -self._proc.returncode
                 if sigNum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
                     status0 = statuslib.ABORTED
+                elif sigNum == signal.SIGSEGV:
+                    status0 = statuslib.SEGFAULT
                 else:
                     status0 = statuslib.FAILED
                 newStatus = dict(status=status0,
@@ -420,7 +422,8 @@ class Service(object):
             self._setStatus(newStatus)
             self._eventLogger.warning('stopped')
             self._eventLogger.warning('status: %s', newStatus)
-            self._postExitCleanup()
+            if status0 != statuslib.SEGFAULT:
+                self._postExitCleanup()
 
     def _postExitCleanup(self):
         self._proc = None

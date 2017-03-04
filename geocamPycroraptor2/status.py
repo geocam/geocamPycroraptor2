@@ -12,6 +12,7 @@ STOPPING = 'stopping'
 SUCCESS = 'success'
 ABORTED = 'aborted'
 FAILED = 'failed'
+SEGFAULT = 'segFaulted'
 
 # status.procStatus values
 RUNNING = 'running'
