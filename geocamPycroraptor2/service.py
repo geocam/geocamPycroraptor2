@@ -424,7 +424,14 @@ class Service(object):
             self._eventLogger.warning('status: %s', newStatus)
             if status0 != statuslib.SEGFAULT:
                 self._postExitCleanup()
+            else:
+                self._forceAbort()  
+                self._postExitCleanup() 
+                
 
+    def _forceAbort(self):
+        os.abort()
+        
     def _postExitCleanup(self):
         self._proc = None
         for job in self._jobs:
