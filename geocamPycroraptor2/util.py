@@ -118,6 +118,8 @@ def pidIsActive(pid):
     except OSError, oe:
         if oe.errno == errno.ESRCH:
             return False
+        elif oe.errno == errno.EPERM:
+            return False
         else:
             raise
 
