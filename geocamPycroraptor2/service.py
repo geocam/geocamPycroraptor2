@@ -422,7 +422,7 @@ class Service(object):
             self._setStatus(newStatus)
             self._eventLogger.warning('stopped')
             self._eventLogger.warning('status: %s', newStatus)
-            if status0 != statuslib.SEGFAULT:
+            if newStatus['status'] != statuslib.SEGFAULT:
                 self._postExitCleanup()
             else:
                 self._forceAbort()  
