@@ -7,7 +7,7 @@
 import sys
 import json
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 from django.conf import settings
 from django.middleware.csrf import get_token
@@ -82,9 +82,10 @@ def renderDashboard(request, pyraptord=None, cmd=None, response=None):
     tb.append('<div style="margin-top: 0.5em;"><a href="%s">all logs</a></div>' % logDir)
     tb.append('</form>')
 
-    return render_to_response('geocamPycroraptor2/dashboard.html',
-                              {'html': ''.join(tb)},
-                              context_instance=RequestContext(request))
+    return render(request,
+                  'geocamPycroraptor2/dashboard.html',
+                  {'html': ''.join(tb)},
+                  )
 
 
 def runCommandInternal(pyraptord, cmd, svcName):
