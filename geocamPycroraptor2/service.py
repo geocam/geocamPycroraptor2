@@ -242,7 +242,8 @@ class Service(object):
                                       logPath,
                                       self._env))
             except:  # pylint: disable=W0702
-                self._parent._logger.warning('could not open log file for service "%s" at path "%s"',
+#                 traceback.print_exc()
+                self._parent._logger.warning('could not open log file for service %s at path %s',
                                              self._name, logPath)
 
         if self._log is not None:
