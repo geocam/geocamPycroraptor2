@@ -117,6 +117,8 @@ def dashboard(request):
         if cmdPair:
             cmd, svcName = cmdPair.split('.', 1)
             assert cmd in ('start', 'stop', 'restart')
+            if cmd in ('start', 'stop'):
+                cmd = cmd + 'Service'
             return runCommand(request, cmd, svcName)
 
     return renderDashboard(request)
