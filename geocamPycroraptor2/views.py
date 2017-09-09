@@ -3,7 +3,7 @@
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
-
+import traceback
 import sys
 import json
 
@@ -128,4 +128,5 @@ def stopPyraptordServiceIfRunning(pyraptord, svcName):
     try:
         pyraptord.stopService(svcName)
     except zerorpc.RemoteError:
+        traceback.print_exc()
         pass
